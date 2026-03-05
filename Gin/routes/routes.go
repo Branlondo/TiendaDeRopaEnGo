@@ -21,6 +21,11 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
+
+	//se define una ruta para "/product" que renderiza la plantilla "product.html" cuando se accede a ella
+	r.GET("/product", func(c *gin.Context) {
+		c.HTML(200, "product.html", nil)
+	})
 	//se define una ruta para cualquier página ("/:page") que verifica si la plantilla correspondiente existe y la renderiza, o muestra una página de error 404 si no existe
 	r.GET("/:page", func(c *gin.Context) {
 		page := c.Param("page")
