@@ -18,7 +18,7 @@
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container px-4 px-lg-5">
                 <!-- Botón con ícono + texto -->
-                <a class="btn btn-light d-flex align-items-center" href="index.html">
+                <a class="btn btn-light d-flex align-items-center" href="/">
                     <img src="/static/assets/Unilogo.ico" alt="Logo" 
                         style="height:24px; width:auto; margin-right:8px;">
                     RFF
@@ -26,15 +26,16 @@
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-                        <li class="nav-item"><a class="nav-link" href="Mujer">MUJER</a></li>
-                        <li class="nav-item"><a class="nav-link" href="Hombre">HOMBRE</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mujer">MUJER</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/hombre">HOMBRE</a></li>
                     </ul>
-                    <form class="d-flex">
-                        <button class="btn btn-outline-dark" type="submit">
-                            <i class="bi-cart-fill me-1"></i>
-                            Cart
-                            <span class="badge bg-dark text-white ms-1 rounded-pill">0</span>
-                        </button>
+                    <form class="d-flex gap-2">
+                    <button class="btn btn-outline-dark" type="button" 
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#loginSidebar">
+                        <i class="bi-person me-1"></i>
+                        Iniciar sesión
+                    </button>
                     </form>
                 </div>
             </div>
@@ -173,6 +174,28 @@
                     </div>
                 </div>
             </div>
+        <!-- Sidebar login -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="loginSidebar">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="offcanvas-title fw-bold">INICIAR SESIÓN</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body d-flex flex-column gap-3 pt-4">
+                <input type="email" class="form-control" placeholder="E-MAIL">
+                <div class="input-group">
+                    <input type="password" id="passLogin" class="form-control" placeholder="CONTRASEÑA">
+                    <button class="btn btn-outline-secondary" type="button"
+                            onclick="togglePass('passLogin')">
+                        <i class="bi-eye"></i>
+                    </button>
+                </div>
+                <button class="btn btn-dark w-100 py-2 fw-bold">INICIAR SESIÓN</button>
+                <hr>
+                <p class="text-center mb-0">¿No tienes cuenta? 
+                    <a href="/registro" class="fw-bold text-dark">REGÍSTRATE</a>
+                </p>
+            </div>
+        </div>
         </section>
         <!-- Footer-->
         <footer class="py-5 bg-dark">

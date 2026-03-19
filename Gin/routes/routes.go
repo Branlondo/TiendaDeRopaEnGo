@@ -1,48 +1,87 @@
-// Define las rutas de la app y importa el paquete gin y define las funciones que se encargaran de procesar las solicitudes HTTP.
+// routes.go — configura todas las rutas HTTP de la aplicación.
+// Cada ruta define qué template renderiza y qué datos le pasa.
 package routes
 
 import (
-	//se necesita para trabajar con el protocolo HTTP y manejar las respuestas
 	"net/http"
-	"os"
-	"strings"
+	"strconv"
+
+	"Gin/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configura las rutas para la aplicación Gin
+// SetupRoutes registra todas las rutas en el router de Gin.
+// Se llama desde main.go pasando el router ya creado.
 func SetupRoutes(r *gin.Engine) {
-	//esto funciona para servir archivos estáticos desde el directorio "./static" cuando se accede a la ruta "/static"
+
+	// Archivos estáticos: CSS, JS, imágenes
 	r.Static("/static", "./static")
-	//esto indica a Gin que cargue las plantillas HTML desde el directorio "templates" con la extensión ".html"
+
+	// Gin carga todos los archivos .html de la carpeta templates
 	r.LoadHTMLGlob("templates/*.html")
 
-	//se define una ruta para la raíz ("/") que renderiza la plantilla "index.html" cuando se accede a ella
+	// ── Página principal ──
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	//se define una ruta para "/product" que renderiza la plantilla "product.html" cuando se accede a ella
-	r.GET("/product", func(c *gin.Context) {
-		c.HTML(200, "product.html", nil)
-	})
-	//se define una ruta para cualquier página ("/:page") que verifica si la plantilla correspondiente existe y la renderiza, o muestra una página de error 404 si no existe
-	r.GET("/:page", func(c *gin.Context) {
-		page := c.Param("page")
-		//si el nombre de la página no termina con ".html", se le agrega esa extensión
-		if !strings.HasSuffix(page, ".html") {
-			//si el nombre de la página no termina con ".html", se le agrega esa extensión
-			page += ".html"
+	// ── Sección Hombre ──
+	// Filtra los productos con CategoriaID == 1 y los pasa al template
+	r.GET("/hombre", func(c *gin.Context) {
+		var filtrados []models.Producto
+		for _, p := range models.Productos {
+			if p.CategoriaID == 1 {
+				filtrados = append(filtrados, p)
+			}
 		}
-		//se verifica si el archivo de plantilla existe en el directorio "templates". Si existe, se renderiza la página; de lo contrario, se muestra una página de error 404
-		if _, err := os.Stat("templates/" + page); err == nil {
-			//si el archivo existe, se renderiza la página
-			c.HTML(http.StatusOK, page, nil)
-			//si el archivo no existe, se muestra una página de error 404
-		} else {
-			//si el archivo no existe, se muestra una página de error 404
-			c.HTML(http.StatusNotFound, "404.html", nil)
-		}
+		c.HTML(http.StatusOK, "Hombre.html", gin.H{
+			"productos": filtrados,
+		})
 	})
 
+	// ── Sección Mujer ──
+	// Filtra los productos con CategoriaID == 2 y los pasa al template
+	r.GET("/mujer", func(c *gin.Context) {
+		var filtrados []models.Producto
+		for _, p := range models.Productos {
+			if p.CategoriaID == 2 {
+				filtrados = append(filtrados, p)
+			}
+		}
+		c.HTML(http.StatusOK, "Mujer.html", gin.H{
+			"productos": filtrados,
+		})
+	})
+
+	// ── Detalle de producto ──
+	// La ruta dinámica :id permite acceder a /producto/1, /producto/2, etc.
+	r.GET("/producto/:id", func(c *gin.Context) {
+		idStr := c.Param("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.HTML(http.StatusNotFound, "product.html", gin.H{"error": "Producto no encontrado"})
+			return
+		}
+		var productoEncontrado *models.Producto
+		for i, p := range models.Productos {
+			if p.ID == id {
+				productoEncontrado = &models.Productos[i]
+				break
+			}
+		}
+		if productoEncontrado == nil {
+			c.HTML(http.StatusNotFound, "product.html", gin.H{"error": "Producto no encontrado"})
+			return
+		}
+		c.HTML(http.StatusOK, "product.html", gin.H{
+			"producto": productoEncontrado,
+		})
+	})
+
+	// ── Carrito ──
+	// Por ahora solo renderiza el template vacio
+	r.GET("/carrito", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "Carrito.html", nil)
+	})
 }
