@@ -80,8 +80,11 @@ func SetupRoutes(r *gin.Engine) {
 	})
 
 	// ── Carrito ──
-	// Por ahora solo renderiza el template vacio
+	// Pasa todos los productos para mostrarlos en "Productos que podrían interesarte".
+	// En el futuro también pasará los ítems del carrito del usuario desde la sesión.
 	r.GET("/carrito", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "Carrito.html", nil)
+		c.HTML(http.StatusOK, "Carrito.html", gin.H{
+			"productos": models.Productos,
+		})
 	})
 }
