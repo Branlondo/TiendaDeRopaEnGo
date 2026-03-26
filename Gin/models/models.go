@@ -13,6 +13,7 @@ type Producto struct {
 	Descripcion string
 	Precio      float64
 	Talla       string
+	Tallas      []string
 	Imagen      string
 	CategoriaID int
 }
@@ -26,8 +27,8 @@ var Categorias = []Categoria{
 
 //Datos de ejemplo para los productos, que se pueden utilizar para probar la aplicación antes de conectar con una base de datos real.
 var Productos = []Producto{
-	{1, "Camisa", "Camisa de algodón para hombre", 29.99, "M", "/static/assets/camisa.jpg", 1},
-	{2, "Pantalón", "Pantalón de mezclilla para hombre", 49.99, "L", "/static/assets/pantalon.jpg", 1},
-	{3, "Blusa", "Blusa de algodón para mujer", 39.99, "S", "/static/assets/blusa.jpg", 2},
-	{4, "Falda", "Falda de flores para mujer", 24.99, "M", "/static/assets/falda.jpg", 2},
+	{1, "Camisa", "Camisa de algodón para hombre", 29.99, "M", []string{"M", "L"}, "/static/assets/camisa.jpg", 1},
+	{2, "Pantalón", "Pantalón de mezclilla para hombre", 49.99, "L", []string{"L"}, "/static/assets/pantalon.jpg", 1},
+	{3, "Blusa", "Blusa de algodón para mujer", 39.99, "S", []string{"S", "M"}, "/static/assets/blusa.jpg", 2},
+	{4, "Falda", "Falda de flores para mujer", 24.99, "M", []string{"M"}, "/static/assets/falda.jpg", 2},
 }
