@@ -1,21 +1,30 @@
-//se encarga de crear el router se encarga de iniciar el serve y importar route y usar las funciones necesarias para registrar rutas en el router
-
+// main.go — punto de entrada de la aplicación.
+// Crea el router, registra el middleware de sesiones y arranca el servidor.
 package main
 
-//importa el paquete "routes" que contiene la configuración de las rutas de la aplicación y el paquete "github.com/gin-gonic/gin" para trabajar con el framework Gin en Go
 import (
-	//Manda a importar las rutas
 	"Gin/routes"
-	// se trabaja el servidor en gin
+
+	// sessions permite guardar datos entre peticiones HTTP usando cookies.
+	// Así el carrito persiste mientras el usuario navega por la tienda.
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
-// func main es el punto de entrada de la aplicación, donde se crea el router, se configuran las rutas y se inicia el servidor en el puerto 8181
 func main() {
-	//sirve para crear un nuevo router de Gin con la configuración predeterminada, que incluye middleware para el registro de solicitudes y la recuperación de pánicos
 	r := gin.Default()
-	//se llama a la función SetupRoutes del paquete routes, pasando el router r como argumento para configurar las rutas de la aplicación
+
+	// cookie.NewStore crea un almacén de sesiones basado en cookies firmadas.
+	// La clave secreta firma la cookie para que el cliente no pueda manipularla.
+	// En producción usarías una clave larga y aleatoria guardada en una variable
+	// de entorno, nunca escrita directamente en el código.
+	store := cookie.NewStore([]byte("rff-clave-secreta-2026"))
+
+	// sessions.Sessions registra el middleware: a partir de aquí, cada handler
+	// puede llamar sessions.Default(c) para leer o escribir la sesión.
+	r.Use(sessions.Sessions("rff_session", store))
+
 	routes.SetupRoutes(r)
-	//el servidor 8080 el cual es por defecto tiene un problema asi que se cambia a 8181 para evitar conflictos con otros servidores que puedan estar corriendo en el puerto 8080
 	r.Run(":8181")
 }

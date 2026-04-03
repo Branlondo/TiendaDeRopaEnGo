@@ -22,14 +22,25 @@
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
                         <li class="nav-item"><a class="nav-link" href="/mujer">MUJER</a></li>
                         <li class="nav-item"><a class="nav-link active" href="/hombre">HOMBRE</a></li>
+                        <!-- Dropdown generado dinámicamente desde .subcategorias -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown">Categorias</a>
+                            <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown">
+                                Categorías
+                            </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="#!">Todas</a></li>
+                                <li>
+                                    <a class="dropdown-item filtro-item active" href="#" data-filtro="todas">
+                                        Todas
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><a class="dropdown-item" href="#!">Camisas</a></li>
-                                <li><a class="dropdown-item" href="#!">Jeans</a></li>
-                                <li><a class="dropdown-item" href="#!">Pantalones</a></li>
+                                {{ range .subcategorias }}
+                                <li>
+                                    <a class="dropdown-item filtro-item" href="#" data-filtro="{{ . }}">
+                                        {{ . }}
+                                    </a>
+                                </li>
+                                {{ end }}
                             </ul>
                         </li>
                     </ul>
@@ -39,7 +50,7 @@
                         </button>
                         <button class="btn btn-outline-dark" type="button" onclick="window.location.href='/carrito'">
                             <i class="bi-cart-fill me-1"></i>Cart
-                            <span class="badge bg-dark text-white ms-1 rounded-pill">0</span>
+                            <span class="badge bg-dark text-white ms-1 rounded-pill">{{ .cartCount }}</span>
                         </button>
                     </div>
                 </div>
@@ -55,17 +66,31 @@
             </div>
         </header>
 
-        <!-- Go itera el slice filtrado por CategoriaID=1 desde routes.go -->
-        <section class="py-5">
-            <div class="container px-4 px-lg-5 mt-5">
-                <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+        <!-- Filtro activo visible -->
+        <div class="container px-4 px-lg-5 pt-4">
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small">Mostrando:</span>
+                <span class="badge bg-dark fs-6" id="filtroActivo">Todos los productos</span>
+            </div>
+        </div>
+
+        <section class="py-4">
+            <div class="container px-4 px-lg-5 mt-3">
+                <!-- Mensaje sin resultados -->
+                <div id="sinResultados" class="text-center py-5" style="display:none;">
+                    <i class="bi-search" style="font-size:3rem;color:#ccc;"></i>
+                    <h5 class="mt-3 text-muted">No hay productos en esta categoría</h5>
+                </div>
+
+                <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center" id="productosGrid">
                     {{ range .productos }}
-                    <div class="col mb-5">
+                    <div class="col mb-5 producto-card" data-subcategoria="{{ .Subcategoria }}">
                         <div class="card h-100">
                             <img class="card-img-top" src="{{ .Imagen }}" alt="{{ .Nombre }}" />
                             <div class="card-body p-4">
                                 <div class="text-center">
                                     <h5 class="fw-bolder">{{ .Nombre }}</h5>
+                                    <span class="badge bg-secondary mb-1">{{ .Subcategoria }}</span><br>
                                     ${{ .Precio }}
                                 </div>
                             </div>
@@ -87,15 +112,13 @@
             </div>
         </footer>
 
-        <!-- Sidebar con login y registro en un solo offcanvas. -->
+        <!-- Sidebar login -->
         <div class="offcanvas offcanvas-end" tabindex="-1" id="loginSidebar">
             <div class="offcanvas-header border-bottom">
                 <h5 class="offcanvas-title fw-bold" id="sidebarTitle">INICIAR SESIÓN</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column gap-3 pt-4">
-
-                <!-- Panel login: visible por defecto -->
                 <div id="panelLogin">
                     <div class="d-flex flex-column gap-3">
                         <input type="email" class="form-control" placeholder="E-MAIL">
@@ -113,8 +136,6 @@
                         </p>
                     </div>
                 </div>
-
-                <!-- Panel registro: oculto por defecto -->
                 <div id="panelRegistro" style="display:none">
                     <div class="d-flex flex-column gap-3">
                         <input type="email" class="form-control" placeholder="E-MAIL">
@@ -136,11 +157,12 @@
                         </p>
                     </div>
                 </div>
-
             </div>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="/static/js/scripts.js"></script>
+        <!-- carrito.js ya no se usa: el carrito lo maneja Go -->
+        <script src="/static/js/filtro.js"></script>
     </body>
 </html>
