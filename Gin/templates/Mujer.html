@@ -45,9 +45,15 @@
                         </li>
                     </ul>
                     <div class="d-flex gap-2">
+                        {{ if .usuario }}
+                        <button class="btn btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#loginSidebar">
+                            <i class="bi-person-fill me-1"></i>{{ .usuario.Nombre }}
+                        </button>
+                        {{ else }}
                         <button class="btn btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#loginSidebar">
                             <i class="bi-person me-1"></i>Iniciar sesión
                         </button>
+                        {{ end }}
                         <button class="btn btn-outline-dark" type="button" onclick="window.location.href='/carrito'">
                             <i class="bi-cart-fill me-1"></i>Cart
                             <span class="badge bg-dark text-white ms-1 rounded-pill">{{ .cartCount }}</span>
@@ -56,6 +62,13 @@
                 </div>
             </div>
         </nav>
+
+        {{ if .flashMsg }}
+        <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show m-0" role="alert" style="border-radius:0;">
+            {{ .flashMsg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {{ end }}
 
         <header class="bg-dark py-5">
             <div class="container px-4 px-lg-5 my-5">
@@ -112,51 +125,67 @@
             </div>
         </footer>
 
-        <!-- Sidebar login -->
+        <!-- Sidebar: muestra perfil si hay sesión, formularios si no hay -->
         <div class="offcanvas offcanvas-end" tabindex="-1" id="loginSidebar">
             <div class="offcanvas-header border-bottom">
-                <h5 class="offcanvas-title fw-bold" id="sidebarTitle">INICIAR SESIÓN</h5>
+                <h5 class="offcanvas-title fw-bold" id="sidebarTitle">
+                    {{ if .usuario }}MI CUENTA{{ else }}INICIAR SESIÓN{{ end }}
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column gap-3 pt-4">
+                {{ if .usuario }}
+                <div class="text-center mb-2">
+                    <i class="bi-person-circle" style="font-size:3.5rem;color:#333;"></i>
+                    <h5 class="fw-bold mt-2 mb-1">{{ .usuario.Nombre }}</h5>
+                    <p class="text-muted small mb-2">{{ .usuario.Email }}</p>
+                    {{ if eq .usuario.Rol "admin" }}
+                    <span class="badge bg-danger">Administrador</span>
+                    {{ else }}
+                    <span class="badge bg-secondary">Cliente</span>
+                    {{ end }}
+                </div>
+                <hr>
+                <a href="/auth/logout" class="btn btn-outline-dark w-100 py-2 fw-bold">
+                    <i class="bi-box-arrow-right me-2"></i>CERRAR SESIÓN
+                </a>
+                {{ else }}
                 <div id="panelLogin">
-                    <div class="d-flex flex-column gap-3">
-                        <input type="email" class="form-control" placeholder="E-MAIL">
+                    <form method="POST" action="/auth/login" class="d-flex flex-column gap-3">
+                        <input type="email" name="email" class="form-control" placeholder="E-MAIL" required>
                         <div class="input-group">
-                            <input type="password" id="passLogin" class="form-control" placeholder="CONTRASEÑA">
+                            <input type="password" id="passLogin" name="password" class="form-control" placeholder="CONTRASEÑA" required>
                             <button class="btn btn-outline-secondary" type="button" data-toggle-pass="passLogin">
                                 <i class="bi-eye" id="eye_passLogin"></i>
                             </button>
                         </div>
-                        <button class="btn btn-dark w-100 py-2 fw-bold" type="button">INICIAR SESIÓN</button>
-                        <hr>
-                        <p class="text-center mb-0">
-                            ¿No tienes cuenta?
-                            <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="registro">REGÍSTRATE</a>
-                        </p>
-                    </div>
+                        <button class="btn btn-dark w-100 py-2 fw-bold" type="submit">INICIAR SESIÓN</button>
+                    </form>
+                    <hr>
+                    <p class="text-center mb-0">
+                        ¿No tienes cuenta?
+                        <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="registro">REGÍSTRATE</a>
+                    </p>
                 </div>
                 <div id="panelRegistro" style="display:none">
-                    <div class="d-flex flex-column gap-3">
-                        <input type="email" class="form-control" placeholder="E-MAIL">
+                    <form method="POST" action="/auth/registro" class="d-flex flex-column gap-3">
+                        <input type="text" name="nombre" class="form-control" placeholder="NOMBRE COMPLETO" required>
+                        <input type="email" name="email" class="form-control" placeholder="E-MAIL" required>
                         <div class="input-group">
-                            <input type="password" id="passRegistro" class="form-control" placeholder="CONTRASEÑA">
+                            <input type="password" id="passRegistro" name="password" class="form-control" placeholder="CONTRASEÑA" required>
                             <button class="btn btn-outline-secondary" type="button" data-toggle-pass="passRegistro">
                                 <i class="bi-eye" id="eye_passRegistro"></i>
                             </button>
                         </div>
-                        <div class="input-group">
-                            <span class="input-group-text fw-bold">+57</span>
-                            <input type="tel" class="form-control" placeholder="TELÉFONO">
-                        </div>
-                        <button class="btn btn-dark w-100 py-2 fw-bold" type="button">CREAR CUENTA</button>
-                        <hr>
-                        <p class="text-center mb-0">
-                            ¿Ya tienes cuenta?
-                            <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="login">INICIA SESIÓN</a>
-                        </p>
-                    </div>
+                        <button class="btn btn-dark w-100 py-2 fw-bold" type="submit">CREAR CUENTA</button>
+                    </form>
+                    <hr>
+                    <p class="text-center mb-0">
+                        ¿Ya tienes cuenta?
+                        <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="login">INICIA SESIÓN</a>
+                    </p>
                 </div>
+                {{ end }}
             </div>
         </div>
 

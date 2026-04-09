@@ -1,18 +1,21 @@
 // main.go — punto de entrada de la aplicación.
-// Crea el router, registra el middleware de sesiones y arranca el servidor.
+// Inicializa la base de datos, configura las sesiones y arranca el servidor.
 package main
 
 import (
+	"Gin/db"
 	"Gin/routes"
 
-	// sessions permite guardar datos entre peticiones HTTP usando cookies.
-	// Así el carrito persiste mientras el usuario navega por la tienda.
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	// Conectar a SQLite y crear las tablas si no existen.
+	// El archivo tienda.db se crea en la misma carpeta donde corres "go run .".
+	db.Init("./tienda.db")
+
 	r := gin.Default()
 
 	// cookie.NewStore crea un almacén de sesiones basado en cookies firmadas.

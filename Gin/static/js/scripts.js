@@ -42,14 +42,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Resetea el sidebar a login cada vez que se cierra
+    // Resetea el sidebar a login cada vez que se cierra.
+    // Usamos null guards porque cuando el usuario está autenticado
+    // el sidebar muestra el perfil y los paneles login/registro no existen en el DOM.
     var sidebar = document.getElementById("loginSidebar");
     if (sidebar) {
         sidebar.addEventListener("hidden.bs.offcanvas", function () {
-            document.getElementById("panelLogin").style.display    = "block";
-            document.getElementById("panelRegistro").style.display = "none";
-            var titulo = document.getElementById("sidebarTitle");
-            if (titulo) titulo.textContent = "INICIAR SESIÓN";
+            var pLogin    = document.getElementById("panelLogin");
+            var pRegistro = document.getElementById("panelRegistro");
+            var titulo    = document.getElementById("sidebarTitle");
+            if (pLogin)    pLogin.style.display    = "block";
+            if (pRegistro) pRegistro.style.display = "none";
+            if (titulo)    titulo.textContent       = "INICIAR SESIÓN";
         });
     }
 

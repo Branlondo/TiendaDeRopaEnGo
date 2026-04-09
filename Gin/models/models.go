@@ -44,6 +44,18 @@ func (i ItemCarrito) Total() float64 {
 	return i.Precio * float64(i.Cantidad)
 }
 
+// Usuario representa a una persona registrada en la tienda.
+// El campo Rol puede ser "cliente" (comprador normal) o "admin" (gestión de tienda).
+// Password nunca se guarda en texto plano: auth.go lo cifra con bcrypt antes
+// de escribirlo en la base de datos.
+type Usuario struct {
+	ID_Usuario int
+	Nombre     string
+	Email      string
+	Password   string // hash bcrypt — solo se usa internamente, nunca se muestra
+	Rol        string // "cliente" | "admin"
+}
+
 // BuscarProductoPorID recorre el slice de productos y devuelve un
 // puntero al producto con el ID indicado, o nil si no existe.
 // El paquete carrito lo usa para construir el ItemCarrito al agregar.
