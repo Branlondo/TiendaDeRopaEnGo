@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"Gin/models"
+	productoPkg "Gin/producto"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -50,6 +51,7 @@ func guardar(c *gin.Context, items []models.ItemCarrito) error {
 }
 
 // Agregar añade un producto al carrito (o incrementa la cantidad si ya existe).
+// Busca el producto en la base de datos (no en el slice estático).
 func Agregar(c *gin.Context, productoID int, talla string, cantidad int) error {
 	items := Obtener(c)
 	for i := range items {
@@ -58,7 +60,8 @@ func Agregar(c *gin.Context, productoID int, talla string, cantidad int) error {
 			return guardar(c, items)
 		}
 	}
-	p := models.BuscarProductoPorID(productoID)
+	// Buscar en la DB usando el paquete producto
+	p := productoPkg.BuscarPorID(productoID)
 	if p == nil {
 		return nil
 	}
@@ -117,4 +120,9 @@ func ContarItems(items []models.ItemCarrito) int {
 		n += item.Cantidad
 	}
 	return n
+}
+
+// Vaciar elimina todos los ítems del carrito (se llama después de confirmar el pago).
+func Vaciar(c *gin.Context) error {
+	return guardar(c, []models.ItemCarrito{})
 }

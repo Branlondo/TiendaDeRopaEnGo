@@ -96,8 +96,9 @@ func guardarSesion(c *gin.Context, u *models.Usuario) {
 // ─── Registro ────────────────────────────────────────────────────────────────
 
 // Registrar inserta un nuevo usuario con rol "cliente" en la base de datos.
-// La contraseña se cifra con bcrypt antes de guardarse (costo 12).
+// La contraseña se cifra con bcrypt antes de guardarse (costo 10).
 // Devuelve error si el email ya existe (violación UNIQUE) o si faltan campos.
+// Nota: PostgreSQL no soporta LastInsertId(), se usa RETURNING para obtener el ID.
 func Registrar(nombre, email, password string) (*models.Usuario, error) {
 	if nombre == "" || email == "" || password == "" {
 		return nil, errors.New("todos los campos son obligatorios")
@@ -107,17 +108,17 @@ func Registrar(nombre, email, password string) (*models.Usuario, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error cifrando contraseña: %w", err)
 	}
-	res, err := db.DB.Exec(
-		`INSERT INTO usuarios (Nombre, Email, Password, Rol) VALUES (?, ?, ?, 'cliente')`,
+	var id int
+	err = db.DB.QueryRow(
+		`INSERT INTO usuarios (Nombre, Email, Password, Rol) VALUES ($1, $2, $3, 'cliente') RETURNING ID_Usuario`,
 		nombre, email, string(hash),
-	)
+	).Scan(&id)
 	if err != nil {
 		// El error más común es la restricción UNIQUE del email
 		return nil, errors.New("ese correo ya está registrado")
 	}
-	id, _ := res.LastInsertId()
 	return &models.Usuario{
-		ID_Usuario: int(id),
+		ID_Usuario: id,
 		Nombre:     nombre,
 		Email:      email,
 		Rol:        "cliente",
@@ -135,7 +136,7 @@ func IniciarSesion(c *gin.Context, email, password string) (*models.Usuario, err
 	var hash string
 
 	err := db.DB.QueryRow(
-		`SELECT ID_Usuario, Nombre, Email, Password, Rol FROM usuarios WHERE Email = ?`,
+		`SELECT ID_Usuario, Nombre, Email, Password, Rol FROM usuarios WHERE Email = $1`,
 		email,
 	).Scan(&u.ID_Usuario, &u.Nombre, &u.Email, &hash, &u.Rol)
 

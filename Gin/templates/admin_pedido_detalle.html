@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Pedido #{{ .pedido.ID_Pedido }} — RFF Admin</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link href="/static/css/styles.css" rel="stylesheet"/>
+    <style>
+        body { background: #f1f5f9; }
+
+        .info-card { background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:24px; margin-bottom:20px; }
+        .info-card-title {
+            font-size:13px; font-weight:700; text-transform:uppercase;
+            letter-spacing:1px; color:#94a3b8; margin-bottom:16px;
+            padding-bottom:10px; border-bottom:1px solid #f1f5f9;
+        }
+        .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .info-item-label { font-size:11px; color:#94a3b8; font-weight:600;
+                           text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+        .info-item-val   { font-size:14px; color:#1e293b; font-weight:500; }
+
+        /* Tabla de productos */
+        .productos-table th { background:#f8fafc; font-size:12px; font-weight:700;
+                              text-transform:uppercase; letter-spacing:.5px; color:#64748b;
+                              border:none; padding:12px 16px; }
+        .productos-table td { border:none; border-top:1px solid #f1f5f9;
+                              padding:14px 16px; vertical-align:middle; }
+        .producto-img { width:52px; height:52px; object-fit:cover; border-radius:8px;
+                        border:1px solid #e2e8f0; background:#f8fafc; }
+        .talla-badge { background:#f1f5f9; border-radius:6px; padding:2px 8px;
+                       font-size:12px; color:#475569; font-weight:600; }
+
+        /* Totales */
+        .totales-row { display:flex; justify-content:space-between;
+                       font-size:14px; padding:8px 0; }
+        .totales-row.final { font-size:17px; font-weight:800; padding-top:14px;
+                             border-top:2px solid #1e293b; margin-top:6px; }
+
+        /* Estado badge */
+        .estado-pill { border-radius:20px; padding:6px 14px; font-size:12px;
+                       font-weight:700; display:inline-flex; align-items:center; gap:6px; }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    {{ template "adminNav" . }}
+
+    <main class="flex-grow-1 p-4" style="min-height:100vh;">
+
+        <!-- Encabezado -->
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <div>
+                <a href="/admin/pedidos" class="text-muted text-decoration-none" style="font-size:13px;">
+                    <i class="bi-arrow-left me-1"></i> Volver a pedidos
+                </a>
+                <h3 class="fw-bold mb-0 mt-1">Pedido #{{ .pedido.ID_Pedido }}</h3>
+                <div class="text-muted small">{{ .pedido.Fecha }}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                {{ if eq .pedido.Estado "pendiente" }}
+                <span class="estado-pill bg-warning text-dark"><i class="bi-clock"></i> Pendiente</span>
+                {{ else if eq .pedido.Estado "pagado" }}
+                <span class="estado-pill bg-success text-white"><i class="bi-check-circle"></i> Pagado</span>
+                {{ else if eq .pedido.Estado "cancelado" }}
+                <span class="estado-pill bg-danger text-white"><i class="bi-x-circle"></i> Cancelado</span>
+                {{ else }}
+                <span class="estado-pill bg-secondary text-white">{{ .pedido.Estado }}</span>
+                {{ end }}
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#modalEliminar">
+                    <i class="bi-trash me-1"></i>Eliminar pedido
+                </button>
+            </div>
+        </div>
+
+        <!-- Flash -->
+        {{ if .flashMsg }}
+        <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show" role="alert">
+            {{ .flashMsg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {{ end }}
+
+        <div class="row g-4">
+
+            <!-- ── COLUMNA IZQUIERDA ─────────────────────────────────── -->
+            <div class="col-lg-8">
+
+                <!-- Productos del pedido -->
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-bag me-2"></i>Productos pedidos</div>
+
+                    {{ if not .items }}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
+                        Sin ítems registrados (pedido anterior a esta funcionalidad)
+                    </div>
+                    {{ else }}
+                    <table class="table productos-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:60px;"></th>
+                                <th>Producto</th>
+                                <th class="text-center">Talla</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Precio unit.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ range .items }}
+                            <tr>
+                                <td>
+                                    <img src="{{ .Imagen }}" alt="{{ .Nombre }}" class="producto-img"
+                                         onerror="this.src='/static/assets/camisa.jpg'" />
+                                </td>
+                                <td>
+                                    <div class="fw-semibold" style="font-size:14px;">{{ .Nombre }}</div>
+                                </td>
+                                <td class="text-center">
+                                    {{ if .Talla }}
+                                    <span class="talla-badge">{{ .Talla }}</span>
+                                    {{ else }}—{{ end }}
+                                </td>
+                                <td class="text-center fw-bold">{{ .Cantidad }}</td>
+                                <td class="text-end" style="font-size:14px;">${{ printf "%.2f" .PrecioUnitario }}</td>
+                                <td class="text-end fw-bold" style="font-size:14px;">${{ printf "%.2f" .Subtotal }}</td>
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                    {{ end }}
+
+                    <!-- Totales -->
+                    <div style="max-width:300px;margin-left:auto;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
+                        <div class="totales-row">
+                            <span style="color:#64748b;">Subtotal productos</span>
+                            <span>${{ printf "%.2f" (fsub .pedido.Total .pedido.CostoEnvio) }}</span>
+                        </div>
+                        <div class="totales-row">
+                            <span style="color:#64748b;">Envío Nacional</span>
+                            <span>${{ printf "%.0f" .pedido.CostoEnvio }}</span>
+                        </div>
+                        <div class="totales-row final">
+                            <span>Total</span>
+                            <span>${{ printf "%.2f" .pedido.Total }}</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── COLUMNA DERECHA ───────────────────────────────────── -->
+            <div class="col-lg-4">
+
+                <!-- Datos de contacto -->
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-person me-2"></i>Contacto</div>
+                    <div class="info-grid" style="grid-template-columns:1fr;">
+                        <div>
+                            <div class="info-item-label">Nombre</div>
+                            <div class="info-item-val">
+                                {{ .pedido.NombreEnvio }} {{ .pedido.ApellidoEnvio }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="info-item-label">Correo electrónico</div>
+                            <div class="info-item-val">{{ if .pedido.EmailContacto }}{{ .pedido.EmailContacto }}{{ else }}—{{ end }}</div>
+                        </div>
+                        <div>
+                            <div class="info-item-label">Cédula</div>
+                            <div class="info-item-val">{{ if .pedido.Cedula }}{{ .pedido.Cedula }}{{ else }}—{{ end }}</div>
+                        </div>
+                        <div>
+                            <div class="info-item-label">Teléfono</div>
+                            <div class="info-item-val">{{ if .pedido.Telefono }}{{ .pedido.Telefono }}{{ else }}—{{ end }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dirección de envío -->
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-truck me-2"></i>Dirección de envío</div>
+                    <div class="info-grid" style="grid-template-columns:1fr;">
+                        <div>
+                            <div class="info-item-label">Dirección</div>
+                            <div class="info-item-val">{{ if .pedido.Direccion }}{{ .pedido.Direccion }}{{ else }}—{{ end }}</div>
+                            {{ if .pedido.Direccion2 }}
+                            <div style="font-size:13px;color:#64748b;margin-top:2px;">{{ .pedido.Direccion2 }}</div>
+                            {{ end }}
+                        </div>
+                        <div>
+                            <div class="info-item-label">Ciudad / Departamento</div>
+                            <div class="info-item-val">
+                                {{ if .pedido.Ciudad }}{{ .pedido.Ciudad }}{{ else }}—{{ end }}
+                                {{ if .pedido.Departamento }}, {{ .pedido.Departamento }}{{ end }}
+                            </div>
+                        </div>
+                        {{ if .pedido.CodigoPostal }}
+                        <div>
+                            <div class="info-item-label">Código postal</div>
+                            <div class="info-item-val">{{ .pedido.CodigoPostal }}</div>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+
+                <!-- Pago -->
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-credit-card me-2"></i>Pago</div>
+                    <div class="info-grid" style="grid-template-columns:1fr;">
+                        <div>
+                            <div class="info-item-label">Método</div>
+                            <div class="info-item-val" style="text-transform:capitalize;">
+                                {{ if .pedido.MetodoPago }}{{ .pedido.MetodoPago }}{{ else }}—{{ end }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="info-item-label">Estado del pago</div>
+                            <div class="info-item-val">
+                                {{ if eq .pedido.Estado "pendiente" }}
+                                <span style="color:#d97706;">⏳ Pendiente de confirmación</span>
+                                {{ else if eq .pedido.Estado "pagado" }}
+                                <span style="color:#16a34a;">✅ Pagado</span>
+                                {{ else }}
+                                <span style="color:#dc2626;">❌ Cancelado</span>
+                                {{ end }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalEliminarLabel">
+                    <i class="bi-exclamation-triangle-fill text-danger me-2"></i>Eliminar pedido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="mb-1">¿Estás seguro de que quieres eliminar el pedido <strong>#{{ .pedido.ID_Pedido }}</strong>?</p>
+                <p class="text-muted small mb-0">
+                    Cliente: {{ .pedido.NombreEnvio }} {{ .pedido.ApellidoEnvio }}
+                </p>
+                <div class="alert alert-warning mt-3 mb-0 py-2" style="font-size:13px;">
+                    <i class="bi-info-circle me-1"></i>
+                    Esta acción es <strong>permanente</strong> y eliminará también los productos del pedido. No se puede deshacer.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="/admin/pedidos/{{ .pedido.ID_Pedido }}/eliminar">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi-trash me-1"></i>Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

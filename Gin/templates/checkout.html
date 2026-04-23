@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Ropa Flash Fashion — Checkout</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #fff; color: #1e293b; font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+
+        /* ── Header ── */
+        .checkout-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 18px 0;
+            text-align: center;
+        }
+        .brand-logo {
+            display: inline-flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #1e293b;
+        }
+        .brand-logo img { height: 32px; width: auto; }
+        .brand-name { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #1e293b; }
+        .uni-badge {
+            font-size: 10px; color: #64748b; border: 1px solid #cbd5e1;
+            border-radius: 4px; padding: 2px 6px; display: flex; align-items: center; gap: 4px;
+        }
+
+        /* ── Breadcrumb ── */
+        .checkout-breadcrumb { font-size: 12px; color: #94a3b8; padding: 12px 0 0; }
+        .checkout-breadcrumb a { color: #0ea5e9; text-decoration: none; }
+        .checkout-breadcrumb span { color: #1e293b; font-weight: 600; }
+
+        /* ── Layout ── */
+        .checkout-wrap { display: flex; min-height: calc(100vh - 130px); }
+        .col-form {
+            flex: 0 0 55%; max-width: 55%;
+            padding: 32px 48px 48px 5%;
+            border-right: 1px solid #e2e8f0;
+        }
+        .col-summary {
+            flex: 0 0 45%; max-width: 45%;
+            padding: 32px 5% 48px 40px;
+            background: #f8fafc;
+        }
+
+        @media (max-width: 768px) {
+            .checkout-wrap { flex-direction: column-reverse; }
+            .col-form, .col-summary { flex: 0 0 100%; max-width: 100%; padding: 24px 16px; border: none; }
+        }
+
+        /* ── Sección heading ── */
+        .section-title { font-size: 16px; font-weight: 700; margin: 28px 0 14px; color: #1e293b; }
+        .section-title:first-child { margin-top: 0; }
+
+        /* ── Form controls ── */
+        .form-control, .form-select {
+            border: 1px solid #cbd5e1; border-radius: 6px;
+            padding: 10px 12px; font-size: 13px; color: #1e293b;
+            background: #fff; transition: border .2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.12); outline: none;
+        }
+        .form-control::placeholder { color: #94a3b8; }
+        .row-2 { display: flex; gap: 10px; }
+        .row-2 > * { flex: 1; }
+        .input-group-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+
+        /* ── País bloqueado ── */
+        .country-badge {
+            display: flex; align-items: center; gap: 8px;
+            border: 1px solid #cbd5e1; border-radius: 6px;
+            padding: 10px 12px; background: #f1f5f9; font-size: 13px; color: #475569;
+        }
+        .country-badge .flag { font-size: 18px; }
+
+        /* ── Checkbox ── */
+        .form-check-label { font-size: 13px; color: #475569; }
+        .form-check-input:checked { background-color: #1e293b; border-color: #1e293b; }
+
+        /* ── Shipping card ── */
+        .shipping-card {
+            border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-bottom: 8px;
+        }
+        .shipping-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px; font-size: 13px;
+        }
+        .shipping-label { display: flex; align-items: center; gap: 10px; }
+        .shipping-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .shipping-price { font-weight: 700; white-space: nowrap; }
+
+        /* ── Métodos de pago ── */
+        .payment-methods { border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        .payment-option {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px; cursor: pointer; transition: background .15s;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .payment-option:last-child { border-bottom: none; }
+        .payment-option:hover { background: #f8fafc; }
+        .payment-option.selected { background: #f0f9ff; }
+        .payment-left { display: flex; align-items: center; gap: 12px; }
+        .payment-radio {
+            width: 18px; height: 18px; border-radius: 50%;
+            border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: border .15s;
+        }
+        .payment-radio.checked { border-color: #1e293b; }
+        .payment-radio.checked::after {
+            content: ''; display: block; width: 9px; height: 9px;
+            border-radius: 50%; background: #1e293b;
+        }
+        .payment-name { font-size: 13px; font-weight: 500; }
+        .payment-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .payment-icon { font-size: 20px; color: #94a3b8; }
+        input[name="metodo_pago"] { display: none; }
+
+        /* ── Dirección de facturación ── */
+        .billing-options { border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        .billing-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #e2e8f0;
+        }
+        .billing-option:last-child { border-bottom: none; }
+        .billing-option.selected { background: #f0f9ff; }
+
+        /* ── Boton pagar ── */
+        .btn-pay {
+            background: #1e293b; color: #fff; border: none;
+            border-radius: 8px; padding: 14px 24px;
+            font-size: 15px; font-weight: 700; width: 100%;
+            cursor: pointer; transition: background .2s; margin-top: 24px;
+        }
+        .btn-pay:hover { background: #0f172a; }
+
+        /* ── Resumen (columna derecha) ── */
+        .summary-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+        .item-thumb {
+            width: 60px; height: 60px; border-radius: 8px; object-fit: cover;
+            border: 1px solid #e2e8f0; flex-shrink: 0; background: #f1f5f9;
+        }
+        .item-qty-badge {
+            position: absolute; top: -6px; right: -6px;
+            background: #64748b; color: #fff;
+            border-radius: 50%; width: 18px; height: 18px;
+            font-size: 10px; display: flex; align-items: center; justify-content: center;
+        }
+        .item-name { font-size: 13px; font-weight: 600; }
+        .item-talla { font-size: 11px; color: #64748b; }
+        .item-price { font-size: 13px; font-weight: 700; white-space: nowrap; }
+        .discount-group { display: flex; gap: 8px; margin-bottom: 20px; }
+        .discount-group input { flex: 1; }
+        .discount-group button {
+            background: #fff; border: 1px solid #cbd5e1; border-radius: 6px;
+            padding: 0 16px; font-size: 13px; color: #1e293b; cursor: pointer;
+            white-space: nowrap;
+        }
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+        .summary-line.total { font-size: 16px; font-weight: 800; padding-top: 12px; border-top: 1px solid #e2e8f0; margin-top: 4px; }
+
+        /* ── Footer ── */
+        .checkout-footer {
+            border-top: 1px solid #e2e8f0; padding: 20px 0;
+            text-align: center; font-size: 12px; color: #94a3b8;
+        }
+        .checkout-footer a { color: #94a3b8; text-decoration: none; margin: 0 8px; }
+        .checkout-footer a:hover { color: #475569; }
+
+        /* ── Info mock ── */
+        .mock-banner {
+            background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;
+            padding: 10px 14px; font-size: 12px; color: #9a3412;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="checkout-header">
+    <div class="container-fluid px-4">
+        <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+            <a href="/" class="brand-logo">
+                <img src="/static/assets/Unilogo.ico" alt="Logo Universidad" />
+                <span class="brand-name">RFF</span>
+            </a>
+            <div class="uni-badge">
+                <img src="/static/assets/Unilogo.ico" alt="Uni" style="height:14px;width:auto;">
+                Ropa Flash Fashion · Universidad
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ── Breadcrumb ──────────────────────────────────────────────────────────── -->
+<div class="container-fluid px-4">
+    <div class="checkout-breadcrumb">
+        <a href="/carrito">Carrito</a> &rsaquo;
+        <span>Información</span> &rsaquo;
+        <a href="#" style="color:#94a3b8;pointer-events:none;">Envío</a> &rsaquo;
+        <a href="#" style="color:#94a3b8;pointer-events:none;">Pago</a>
+    </div>
+</div>
+
+<!-- ── Flash mensaje ───────────────────────────────────────────────────────── -->
+{{ if .flashMsg }}
+<div class="container-fluid px-4 mt-2">
+    <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show" role="alert">
+        {{ .flashMsg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+{{ end }}
+
+<!-- ── Cuerpo ──────────────────────────────────────────────────────────────── -->
+<form method="POST" action="/checkout/pago" id="checkoutForm">
+<div class="checkout-wrap">
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         COLUMNA IZQUIERDA — Formulario
+    ════════════════════════════════════════════════════════════════════════ -->
+    <div class="col-form">
+
+        <!-- Aviso simulación -->
+        <div class="mock-banner">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>Pago simulado — ninguna transacción real será procesada.</span>
+        </div>
+
+        <!-- ── Contacto ── -->
+        <div class="section-title">Contacto</div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <small class="text-muted">Puedes comprar sin necesidad de crear una cuenta.</small>
+            {{ if .usuario }}
+            <span style="font-size:12px;color:#16a34a;"><i class="bi bi-check-circle-fill"></i> {{ .usuario.Nombre }}</span>
+            {{ else }}
+            <a href="/" class="text-muted" style="font-size:12px;">¿Ya tienes cuenta? Iniciar sesión</a>
+            {{ end }}
+        </div>
+
+        <div class="input-group-stack">
+            <input type="email" name="email" class="form-control"
+                   placeholder="Correo electrónico"
+                   value="{{ if .usuario }}{{ .usuario.Email }}{{ end }}"
+                   required />
+        </div>
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="newsletter" id="newsletter">
+            <label class="form-check-label" for="newsletter">
+                Enviarme novedades y ofertas por correo electrónico
+            </label>
+        </div>
+
+        <!-- ── Entrega ── -->
+        <div class="section-title">Entrega</div>
+
+        <!-- País fijo: Colombia (expandible en el futuro) -->
+        <div class="country-badge mb-2">
+            <span class="flag">🇨🇴</span>
+            <span>Colombia</span>
+            <small class="ms-auto text-muted" style="font-size:11px;">Próximamente más países</small>
+        </div>
+
+        <div class="input-group-stack">
+            <div class="row-2">
+                <input type="text" name="nombre" class="form-control" placeholder="Nombre"
+                       value="{{ if .usuario }}{{ .usuario.Nombre }}{{ end }}"
+                       required />
+                <input type="text" name="apellido" class="form-control" placeholder="Apellidos" required />
+            </div>
+            <input type="text" name="cedula" class="form-control" placeholder="Cédula" required />
+            <input type="text" name="direccion" class="form-control" placeholder="Dirección" required />
+            <input type="text" name="direccion2" class="form-control" placeholder="Casa, apartamento, etc. (opcional)" />
+            <div class="row-2">
+                <input type="text" name="ciudad" class="form-control" placeholder="Ciudad" required />
+                <select name="departamento" class="form-select" required>
+                    <option value="" disabled selected>Departamento</option>
+                    {{ range .departamentos }}
+                    <option value="{{ . }}">{{ . }}</option>
+                    {{ end }}
+                </select>
+            </div>
+            <input type="text" name="codigo_postal" class="form-control" placeholder="Código postal (opcional)" />
+            <input type="tel" name="telefono" class="form-control" placeholder="Teléfono" required />
+        </div>
+
+        <!-- ── Método de envío ── -->
+        <div class="section-title">Método de envío</div>
+
+        <div class="shipping-card">
+            <div class="shipping-row">
+                <div class="shipping-label">
+                    <div>
+                        <div style="font-weight:600;">Entrega Estándar Nacional</div>
+                        <div class="shipping-desc">2 a 5 días hábiles ciudades principales · más de 7 días otros municipios</div>
+                    </div>
+                </div>
+                <div class="shipping-price">$ {{ printf "%.0f" .costoEnvio }}</div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-pay">
+            Continuar al pago <i class="bi bi-arrow-right ms-2"></i>
+        </button>
+
+        <!-- Links footer form -->
+        <div style="margin-top:20px;font-size:12px;color:#94a3b8;display:flex;gap:16px;flex-wrap:wrap;">
+            <a href="/carrito" style="color:#94a3b8;">← Volver al carrito</a>
+            <a href="/" style="color:#94a3b8;">Política de reembolso</a>
+            <a href="/" style="color:#94a3b8;">Política de privacidad</a>
+        </div>
+
+    </div><!-- /col-form -->
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         COLUMNA DERECHA — Resumen del pedido
+    ════════════════════════════════════════════════════════════════════════ -->
+    <div class="col-summary">
+        <div style="position:sticky;top:24px;">
+
+            <!-- Items -->
+            {{ range .items }}
+            <div class="summary-item">
+                <div style="position:relative;">
+                    <img src="{{ .Imagen }}" alt="{{ .Nombre }}" class="item-thumb"
+                         onerror="this.src='/static/assets/camisa.jpg'" />
+                    <span class="item-qty-badge">{{ .Cantidad }}</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div class="item-name">{{ .Nombre }}</div>
+                    <div class="item-talla">Talla: {{ .Talla }}</div>
+                </div>
+                <div class="item-price">${{ printf "%.2f" .Total }}</div>
+            </div>
+            {{ end }}
+
+            <!-- Código de descuento (cosmético) -->
+            <div class="discount-group">
+                <input type="text" class="form-control" placeholder="Código de descuento o tarjeta de regalo" />
+                <button type="button">Aplicar</button>
+            </div>
+
+            <!-- Totales -->
+            <div class="summary-line">
+                <span style="color:#475569;">Subtotal</span>
+                <span style="font-weight:600;">${{ printf "%.2f" .subtotal }}</span>
+            </div>
+            <div class="summary-line">
+                <span style="color:#475569;">Envío <i class="bi bi-info-circle" style="font-size:11px;"></i></span>
+                <span style="font-weight:600;">${{ printf "%.0f" .costoEnvio }}</span>
+            </div>
+            <div class="summary-line total">
+                <span>Total</span>
+                <span>
+                    <small style="font-size:11px;font-weight:400;color:#64748b;margin-right:4px;">COP</small>
+                    ${{ printf "%.2f" .total }}
+                </span>
+            </div>
+
+        </div>
+    </div><!-- /col-summary -->
+
+</div><!-- /checkout-wrap -->
+</form>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────────── -->
+<footer class="checkout-footer">
+    <a href="/">Política de reembolso</a>
+    <a href="/">Envío</a>
+    <a href="/">Política de privacidad</a>
+    <a href="/">Términos del servicio</a>
+    <a href="/">Contacto</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ── Selección de método de pago ──
+    function selectPago(id, el) {
+        // Quitar selección anterior
+        document.querySelectorAll('.payment-option').forEach(o => {
+            o.classList.remove('selected');
+            o.querySelector('.payment-radio').classList.remove('checked');
+        });
+        el.classList.add('selected');
+        el.querySelector('.payment-radio').classList.add('checked');
+        document.getElementById('metodoPagoVal').value = id;
+    }
+
+    // ── Selección de dirección de facturación ──
+    function selectBilling(tipo) {
+        const misma = document.getElementById('billingMisma');
+        const dist  = document.getElementById('billingDist');
+        const rMisma = document.getElementById('radioMisma');
+        const rDist  = document.getElementById('radioDist');
+        if (tipo === 'misma') {
+            misma.classList.add('selected'); dist.classList.remove('selected');
+            rMisma.classList.add('checked'); rDist.classList.remove('checked');
+        } else {
+            dist.classList.add('selected'); misma.classList.remove('selected');
+            rDist.classList.add('checked'); rMisma.classList.remove('checked');
+        }
+    }
+</script>
+</body>
+</html>

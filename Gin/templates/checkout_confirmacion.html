@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>¡Compra exitosa! — RFF</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        body { background: #f8fafc; font-family: 'Segoe UI', sans-serif; color: #1e293b; margin: 0; }
+
+        .checkout-header { background:#fff; border-bottom:1px solid #e2e8f0; padding:18px 0; text-align:center; }
+        .brand-logo { display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:#1e293b; }
+        .brand-logo img { height:32px; width:auto; }
+        .brand-name { font-size:22px; font-weight:800; letter-spacing:3px; }
+
+        /* ── Animación check ── */
+        .success-circle {
+            width: 90px; height: 90px; border-radius: 50%;
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px;
+            animation: popIn .5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes popIn {
+            0%   { transform: scale(0); opacity: 0; }
+            80%  { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .success-circle i { font-size: 40px; color: #fff; }
+
+        .confirm-card {
+            background: #fff; border-radius: 20px; border: 1px solid #e2e8f0;
+            max-width: 580px; margin: 48px auto; padding: 44px 40px;
+            animation: fadeUp .4s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(20px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        .order-num   { font-size:13px; color:#64748b; text-align:center; margin-bottom:4px; }
+        .order-title { font-size:26px; font-weight:800; text-align:center; margin-bottom:8px; }
+        .order-sub   { font-size:14px; color:#64748b; text-align:center; margin-bottom:32px; line-height:1.6; }
+
+        /* ── Info boxes ── */
+        .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+        @media(max-width:480px){ .info-grid { grid-template-columns:1fr; } }
+        .info-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; }
+        .info-box-label { font-size:11px; font-weight:700; text-transform:uppercase;
+                          letter-spacing:1px; color:#94a3b8; margin-bottom:6px; }
+        .info-box-val   { font-size:15px; font-weight:600; color:#1e293b; }
+        .info-box-sub   { font-size:12px; color:#64748b; margin-top:2px; }
+
+        /* ── Estado badge ── */
+        .estado-badge {
+            display:inline-flex; align-items:center; gap:8px;
+            background:#fef9c3; color:#854d0e; border-radius:24px;
+            padding:8px 18px; font-size:13px; font-weight:700;
+            border:1px solid #fde68a;
+        }
+
+        /* ── Pasos ── */
+        .pasos { display:flex; gap:0; margin:28px 0; }
+        .paso  { flex:1; text-align:center; position:relative; }
+        .paso::after {
+            content:''; position:absolute; top:16px; left:50%; right:-50%;
+            height:2px; background:#e2e8f0; z-index:0;
+        }
+        .paso:last-child::after { display:none; }
+        .paso-icon {
+            width:34px; height:34px; border-radius:50%; background:#e2e8f0;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 6px; position:relative; z-index:1;
+            font-size:14px; color:#94a3b8;
+        }
+        .paso-icon.activo { background:#1e293b; color:#fff; }
+        .paso-text { font-size:11px; color:#94a3b8; }
+        .paso-text.activo { color:#1e293b; font-weight:600; }
+
+        /* ── Botones ── */
+        .btn-shop {
+            display:block; text-align:center; background:#1e293b; color:#fff;
+            border-radius:10px; padding:14px; font-weight:700;
+            text-decoration:none; transition:background .2s; font-size:15px;
+        }
+        .btn-shop:hover { background:#0f172a; color:#fff; }
+
+        .checkout-footer { text-align:center; padding:20px; font-size:12px; color:#94a3b8; }
+        .checkout-footer a { color:#94a3b8; text-decoration:none; margin:0 8px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="checkout-header">
+    <a href="/" class="brand-logo">
+        <img src="/static/assets/Unilogo.ico" alt="Logo" />
+        <span class="brand-name">RFF</span>
+    </a>
+</header>
+
+<div class="container px-3">
+    <div class="confirm-card">
+
+        <!-- Ícono animado -->
+        <div class="success-circle">
+            <i class="bi bi-check-lg"></i>
+        </div>
+
+        <!-- Número de pedido -->
+        <div class="order-num">Pedido #{{ .pedido.ID_Pedido }}</div>
+        <div class="order-title">¡Compra exitosa!</div>
+        <div class="order-sub">
+            Hola <strong>{{ .pedido.NombreEnvio }}</strong>, tu pedido ha sido recibido.<br>
+            {{ if .pedido.EmailContacto }}
+            Te enviaremos una confirmación a <strong>{{ .pedido.EmailContacto }}</strong>
+            {{ end }}
+        </div>
+
+        <!-- Estado actual -->
+        <div style="text-align:center;margin-bottom:28px;">
+            <span class="estado-badge">
+                <i class="bi bi-clock-history"></i> Pedido en proceso
+            </span>
+        </div>
+
+        <!-- Pasos del pedido -->
+        <div class="pasos">
+            <div class="paso">
+                <div class="paso-icon activo"><i class="bi bi-check"></i></div>
+                <div class="paso-text activo">Confirmado</div>
+            </div>
+            <div class="paso">
+                <div class="paso-icon"><i class="bi bi-box-seam"></i></div>
+                <div class="paso-text">Preparando</div>
+            </div>
+            <div class="paso">
+                <div class="paso-icon"><i class="bi bi-truck"></i></div>
+                <div class="paso-text">En camino</div>
+            </div>
+            <div class="paso">
+                <div class="paso-icon"><i class="bi bi-house-door"></i></div>
+                <div class="paso-text">Entregado</div>
+            </div>
+        </div>
+
+        <!-- Info del pedido -->
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-box-label">Total pagado</div>
+                <div class="info-box-val">COP ${{ printf "%.2f" .pedido.Total }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-box-label">Método de pago</div>
+                <div class="info-box-val" style="text-transform:capitalize;">{{ .pedido.MetodoPago }}</div>
+                <div class="info-box-sub">Simulado — sin cargo real</div>
+            </div>
+            <div class="info-box" style="grid-column:span 2;">
+                <div class="info-box-label">Envío a</div>
+                <div class="info-box-val">{{ .pedido.NombreEnvio }} {{ .pedido.ApellidoEnvio }}</div>
+                <div class="info-box-sub">Entrega Estándar Nacional — 2 a 7 días hábiles</div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <a href="/" class="btn-shop">
+            <i class="bi bi-bag me-2"></i> Seguir comprando
+        </a>
+
+    </div>
+</div>
+
+<footer class="checkout-footer">
+    <a href="/">Política de reembolso</a>
+    <a href="/">Envío</a>
+    <a href="/">Política de privacidad</a>
+    <a href="/">Contacto</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

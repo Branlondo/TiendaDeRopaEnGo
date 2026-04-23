@@ -1,0 +1,58 @@
+{{/*
+  admin_shared.html — define bloques reutilizables para el panel admin.
+  No se renderiza directamente; los demás templates admin lo invocan con
+  {{ template "adminNav" . }}
+*/}}
+
+{{ define "adminNav" }}
+<nav class="d-flex flex-column text-white"
+     style="width:240px;min-height:100vh;background:#1e293b;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;">
+
+    <!-- Encabezado -->
+    <div class="p-4 border-bottom" style="border-color:#334155!important;">
+        <div class="fw-bold fs-5 text-white">🏪 RFF Admin</div>
+        <div class="small" style="color:#94a3b8;">Panel de administración</div>
+    </div>
+
+    <!-- Links de navegación -->
+    <div class="flex-grow-1 p-3">
+        <div class="text-uppercase small fw-bold mb-3" style="color:#64748b;letter-spacing:.08em;">Gestión</div>
+
+        <a href="/admin"
+           class="d-flex align-items-center gap-2 py-2 px-3 rounded mb-1 text-decoration-none text-white {{ if eq .paginaActual "dashboard" }}fw-bold{{ end }}"
+           style="background:{{ if eq .paginaActual "dashboard" }}#3b82f6{{ else }}transparent{{ end }};">
+            <i class="bi-speedometer2"></i> Dashboard
+        </a>
+
+        <a href="/admin/productos"
+           class="d-flex align-items-center gap-2 py-2 px-3 rounded mb-1 text-decoration-none text-white {{ if eq .paginaActual "productos" }}fw-bold{{ end }}"
+           style="background:{{ if eq .paginaActual "productos" }}#3b82f6{{ else }}transparent{{ end }};">
+            <i class="bi-box-seam"></i> Productos
+        </a>
+
+        <a href="/admin/pedidos"
+           class="d-flex align-items-center gap-2 py-2 px-3 rounded mb-1 text-decoration-none text-white {{ if eq .paginaActual "pedidos" }}fw-bold{{ end }}"
+           style="background:{{ if eq .paginaActual "pedidos" }}#3b82f6{{ else }}transparent{{ end }};">
+            <i class="bi-bag-check"></i> Pedidos
+        </a>
+    </div>
+
+    <!-- Pie: usuario + acciones rápidas -->
+    <div class="p-3 border-top" style="border-color:#334155!important;">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi-person-circle fs-4" style="color:#94a3b8;"></i>
+            <div>
+                <div class="small fw-bold text-white">{{ .usuario.Nombre }}</div>
+                <div style="font-size:.7rem;color:#64748b;">Administrador</div>
+            </div>
+        </div>
+        <a href="/" class="btn btn-sm w-100 mb-2 text-white"
+           style="background:#334155;border:none;">
+            <i class="bi-arrow-left me-1"></i>Ver tienda
+        </a>
+        <a href="/auth/logout" class="btn btn-outline-danger btn-sm w-100">
+            <i class="bi-box-arrow-right me-1"></i>Cerrar sesión
+        </a>
+    </div>
+</nav>
+{{ end }}

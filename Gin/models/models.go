@@ -1,30 +1,34 @@
+// models.go — define los structs (tipos de datos) de la aplicación.
+// Solo contiene estructuras de datos, sin lógica de base de datos.
+// Las funciones CRUD de cada entidad viven en sus propios paquetes:
+//   - Productos  → Gin/producto/producto.go
+//   - Usuarios   → Gin/auth/auth.go
+//   - Categorías → Gin/db/db.go (ListarCategorias)
 package models
 
-// Define los modelos de datos para la aplicación.
+// Categoria representa una sección de la tienda (Hombre / Mujer).
+// Los datos vienen de la tabla 'categorias' de PostgreSQL.
 type Categoria struct {
 	ID          int
 	Nombre      string
 	Descripcion string
 }
 
+// Producto representa un artículo del catálogo de la tienda.
+// Los datos vienen de la tabla 'productos' de PostgreSQL.
 type Producto struct {
 	ID           int
 	Nombre       string
 	Descripcion  string
 	Precio       float64
-	Talla        string
-	Tallas       []string
+	Talla        string   // primera talla disponible (valor por defecto)
+	Tallas       []string // todas las tallas disponibles, ej: ["S","M","L"]
 	Imagen       string
 	CategoriaID  int
 	Subcategoria string
 }
 
-var Categorias = []Categoria{
-	{111, "Hombre", "Ropa para hombres"},
-	{222, "Mujer", "Ropa para mujeres"},
-}
-
-// ItemCarrito representa un producto dentro del carrito de compras.
+// ItemCarrito representa un producto dentro del carrito de compras (en sesión).
 // Guarda una copia de los datos del producto para que, si el precio
 // cambia, el carrito refleje el precio al momento de agregar.
 type ItemCarrito struct {
@@ -45,35 +49,36 @@ func (i ItemCarrito) Total() float64 {
 }
 
 // Usuario representa a una persona registrada en la tienda.
-// El campo Rol puede ser "cliente" (comprador normal) o "admin" (gestión de tienda).
-// Password nunca se guarda en texto plano: auth.go lo cifra con bcrypt antes
-// de escribirlo en la base de datos.
+// El campo Rol puede ser "cliente" (comprador) o "admin" (gestión de tienda).
+// Password nunca se muestra: auth.go lo cifra con bcrypt antes de guardarlo.
 type Usuario struct {
 	ID_Usuario int
 	Nombre     string
 	Email      string
-	Password   string // hash bcrypt — solo se usa internamente, nunca se muestra
+	Password   string // hash bcrypt — nunca texto plano
 	Rol        string // "cliente" | "admin"
 }
 
-// BuscarProductoPorID recorre el slice de productos y devuelve un
-// puntero al producto con el ID indicado, o nil si no existe.
-// El paquete carrito lo usa para construir el ItemCarrito al agregar.
-func BuscarProductoPorID(id int) *Producto {
-	for i, p := range Productos {
-		if p.ID == id {
-			return &Productos[i]
-		}
-	}
-	return nil
-}
-
-// Para agregar una nueva subcategoría basta con crear un producto con el campo
-// Subcategoria deseado; el menú de filtros se genera dinámicamente desde los datos.
-var Productos = []Producto{
-	{1, "Camisa", "Camisa de algodón para hombre", 29.99, "M", []string{"M", "L"}, "/static/assets/camisa.jpg", 111, "Camisa"},
-	{2, "Pantalón", "Pantalón de mezclilla para hombre", 49.99, "L", []string{"L"}, "/static/assets/pantalon.jpg", 111, "Pantalón"},
-	{3, "Blusa", "Blusa de algodón para mujer", 39.99, "S", []string{"S"}, "/static/assets/blusa.jpg", 222, "Blusa"},
-	{4, "Falda", "Falda de flores para mujer", 24.99, "M", []string{"M"}, "/static/assets/falda.jpg", 222, "Falda"},
-	{5, "Chaqueta", "Chaqueta de cuero para hombre", 89.99, "L", []string{"L"}, "/static/assets/chaqueta.jpg", 111, "Chaqueta"},
+// Pedido representa una compra confirmada por un cliente.
+// Estado: "pendiente" → "pagado" | "cancelado"
+type Pedido struct {
+	ID_Pedido     int
+	UsuarioID     int
+	NombreCliente string // campo de JOIN con la tabla usuarios
+	Fecha         string
+	Total         float64
+	Estado        string // "pendiente" | "pagado" | "cancelado"
+	// Datos de envío
+	EmailContacto string
+	NombreEnvio   string
+	ApellidoEnvio string
+	Cedula        string
+	Direccion     string
+	Direccion2    string
+	Ciudad        string
+	Departamento  string
+	CodigoPostal  string
+	Telefono      string
+	MetodoPago    string
+	CostoEnvio    float64
 }

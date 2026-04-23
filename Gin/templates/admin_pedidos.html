@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Pedidos — RFF Admin</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link href="/static/css/styles.css" rel="stylesheet"/>
+    <style>
+        body { background: #f1f5f9; }
+        .badge-estado { font-size: 12px; padding: 5px 10px; border-radius: 20px; font-weight: 600; }
+        .metodo-badge { font-size: 11px; background: #f1f5f9; border: 1px solid #e2e8f0;
+                        border-radius: 12px; padding: 2px 8px; color: #475569; }
+    </style>
+</head>
+<body>
+
+<div class="d-flex">
+    {{ template "adminNav" . }}
+
+    <main class="flex-grow-1 p-4" style="min-height:100vh;">
+
+        <!-- Encabezado -->
+        <div class="mb-4">
+            <h3 class="fw-bold mb-0">Pedidos</h3>
+            <div class="text-muted small">Historial de compras de los clientes</div>
+        </div>
+
+        <!-- Flash message -->
+        {{ if .flashMsg }}
+        <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show" role="alert">
+            {{ .flashMsg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {{ end }}
+
+        <!-- Tabla o estado vacío -->
+        <div class="card border-0 shadow-sm">
+            {{ if not .pedidos }}
+            <div class="card-body text-center py-5">
+                <i class="bi-bag-x" style="font-size:4rem;color:#cbd5e1;display:block;margin-bottom:1rem;"></i>
+                <h5 class="fw-bold text-muted">Todavía no hay pedidos</h5>
+                <p class="text-muted mb-4">
+                    Cuando un cliente complete una compra aparecerá aquí.<br>
+                    ¡Comparte la tienda para conseguir tus primeros pedidos!
+                </p>
+                <a href="/" class="btn btn-outline-secondary" target="_blank">
+                    <i class="bi-box-arrow-up-right me-1"></i> Ver la tienda
+                </a>
+            </div>
+            {{ else }}
+            <div class="card-header bg-white border-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                <span class="text-muted small">{{ len .pedidos }} pedido(s)</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4"># Pedido</th>
+                            <th>Cliente</th>
+                            <th>Destino</th>
+                            <th>Método pago</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .pedidos }}
+                        <tr>
+                            <td class="ps-4 fw-bold text-muted">#{{ .ID_Pedido }}</td>
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ if .NombreEnvio }}{{ .NombreEnvio }} {{ .ApellidoEnvio }}{{ else }}{{ .NombreCliente }}{{ end }}
+                                </div>
+                                <div class="text-muted" style="font-size:12px;">{{ .EmailContacto }}</div>
+                            </td>
+                            <td>
+                                <div style="font-size:13px;">{{ .Ciudad }}</div>
+                                <div class="text-muted" style="font-size:11px;">{{ .Departamento }}</div>
+                            </td>
+                            <td>
+                                {{ if .MetodoPago }}
+                                <span class="metodo-badge">{{ .MetodoPago }}</span>
+                                {{ else }}
+                                <span class="text-muted">—</span>
+                                {{ end }}
+                            </td>
+                            <td class="text-muted" style="font-size:13px;">{{ .Fecha }}</td>
+                            <td class="fw-bold">${{ printf "%.2f" .Total }}</td>
+                            <td>
+                                {{ if eq .Estado "pendiente" }}
+                                <span class="badge-estado badge bg-warning text-dark">⏳ Pendiente</span>
+                                {{ else if eq .Estado "pagado" }}
+                                <span class="badge-estado badge bg-success">✅ Pagado</span>
+                                {{ else if eq .Estado "cancelado" }}
+                                <span class="badge-estado badge bg-danger">❌ Cancelado</span>
+                                {{ else }}
+                                <span class="badge-estado badge bg-secondary">{{ .Estado }}</span>
+                                {{ end }}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="/admin/pedidos/{{ .ID_Pedido }}"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Ver detalle">
+                                        <i class="bi-eye"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Eliminar pedido"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEliminar"
+                                            data-id="{{ .ID_Pedido }}"
+                                            data-cliente="{{ if .NombreEnvio }}{{ .NombreEnvio }} {{ .ApellidoEnvio }}{{ else }}{{ .NombreCliente }}{{ end }}">
+                                        <i class="bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+            {{ end }}
+        </div>
+
+    </main>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalEliminarLabel">
+                    <i class="bi-exclamation-triangle-fill text-danger me-2"></i>Eliminar pedido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="mb-1">¿Estás seguro de que quieres eliminar el pedido <strong id="modalPedidoNum"></strong>?</p>
+                <p class="text-muted small mb-0">Cliente: <span id="modalPedidoCliente"></span></p>
+                <div class="alert alert-warning mt-3 mb-0 py-2" style="font-size:13px;">
+                    <i class="bi-info-circle me-1"></i>
+                    Esta acción es <strong>permanente</strong> y eliminará también los productos del pedido. No se puede deshacer.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formEliminar" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi-trash me-1"></i>Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Al abrir el modal, inyecta el ID y nombre del pedido seleccionado
+document.getElementById('modalEliminar').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    const id = btn.getAttribute('data-id');
+    const cliente = btn.getAttribute('data-cliente');
+    document.getElementById('modalPedidoNum').textContent = '#' + id;
+    document.getElementById('modalPedidoCliente').textContent = cliente;
+    document.getElementById('formEliminar').action = '/admin/pedidos/' + id + '/eliminar';
+});
+</script>
+</body>
+</html>

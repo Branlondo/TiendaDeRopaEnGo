@@ -1,33 +1,50 @@
 // main.go — punto de entrada de la aplicación.
-// Inicializa la base de datos, configura las sesiones y arranca el servidor.
+// Carga las variables de entorno desde .env, inicializa PostgreSQL y arranca el servidor.
 package main
 
 import (
+	"log"
+	"os"
+
 	"Gin/db"
 	"Gin/routes"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Conectar a SQLite y crear las tablas si no existen.
-	// El archivo tienda.db se crea en la misma carpeta donde corres "go run .".
-	db.Init("./tienda.db")
+	// Cargar variables de entorno desde el archivo .env.
+	// Si el archivo no existe se omite (en producción las vars vienen del sistema).
+	if err := godotenv.Load(); err != nil {
+		log.Println("main: archivo .env no encontrado, usando variables del sistema")
+	}
+
+	// Conectar a PostgreSQL y crear las tablas si no existen.
+	db.Init()
 
 	r := gin.Default()
 
-	// cookie.NewStore crea un almacén de sesiones basado en cookies firmadas.
-	// La clave secreta firma la cookie para que el cliente no pueda manipularla.
-	// En producción usarías una clave larga y aleatoria guardada en una variable
-	// de entorno, nunca escrita directamente en el código.
-	store := cookie.NewStore([]byte("rff-clave-secreta-2026"))
+	// Leer la clave secreta de sesión desde el entorno.
+	// Si no está definida usa un fallback (solo para desarrollo local).
+	secret := os.Getenv("SESSION_SECRET")
+	if secret == "" {
+		secret = "clave-de-desarrollo-local-no-usar-en-produccion"
+		log.Println("ADVERTENCIA: SESSION_SECRET no está definida, usando clave de desarrollo")
+	}
 
-	// sessions.Sessions registra el middleware: a partir de aquí, cada handler
-	// puede llamar sessions.Default(c) para leer o escribir la sesión.
+	// cookie.NewStore crea un almacén de sesiones basado en cookies firmadas.
+	store := cookie.NewStore([]byte(secret))
 	r.Use(sessions.Sessions("rff_session", store))
 
 	routes.SetupRoutes(r)
-	r.Run(":8181")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8181"
+	}
+	log.Printf("main: servidor escuchando en http://localhost:%s", port)
+	r.Run(":" + port)
 }
