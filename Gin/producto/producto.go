@@ -13,10 +13,13 @@ import (
 )
 
 // cols es la lista de columnas que se seleccionan en cada query.
-// Se define aquí para no repetirla en cada función.
-const cols = `SELECT ID_Producto, Nombre, COALESCE(Descripcion,''), Precio,
-	COALESCE(ImagenURL,''), CategoriaID, COALESCE(Subcategoria,''), Tallas
-	FROM productos`
+// Incluye JOIN con categorias para obtener el nombre de la categoría
+// sin necesidad de hardcodear IDs en los templates.
+const cols = `SELECT p.ID_Producto, p.Nombre, COALESCE(p.Descripcion,''), p.Precio,
+	COALESCE(p.ImagenURL,''), p.CategoriaID, COALESCE(p.Subcategoria,''), p.Tallas,
+	COALESCE(c.Nombre,'')
+	FROM productos p
+	LEFT JOIN categorias c ON p.CategoriaID = c.ID_Categoria`
 
 // poblar lee tallasStr (CSV "S,M,L") y rellena los campos Tallas y Talla del struct.
 func poblar(p *models.Producto, tallasStr string) {
@@ -42,7 +45,7 @@ func Listar() []models.Producto {
 	for rows.Next() {
 		var p models.Producto
 		var tallasStr string
-		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr); err != nil {
+		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria); err != nil {
 			continue
 		}
 		poblar(&p, tallasStr)
@@ -53,7 +56,7 @@ func Listar() []models.Producto {
 
 // ListarPorCategoria devuelve los productos de una categoría (1=Hombre, 2=Mujer).
 func ListarPorCategoria(categoriaID int) []models.Producto {
-	rows, err := db.DB.Query(cols+` WHERE CategoriaID = $1 ORDER BY ID_Producto`, categoriaID)
+	rows, err := db.DB.Query(cols+` WHERE p.CategoriaID = $1 ORDER BY p.ID_Producto`, categoriaID)
 	if err != nil {
 		log.Println("producto.ListarPorCategoria:", err)
 		return nil
@@ -63,7 +66,7 @@ func ListarPorCategoria(categoriaID int) []models.Producto {
 	for rows.Next() {
 		var p models.Producto
 		var tallasStr string
-		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr); err != nil {
+		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria); err != nil {
 			continue
 		}
 		poblar(&p, tallasStr)
@@ -77,8 +80,8 @@ func ListarPorCategoria(categoriaID int) []models.Producto {
 func BuscarPorID(id int) *models.Producto {
 	var p models.Producto
 	var tallasStr string
-	err := db.DB.QueryRow(cols+` WHERE ID_Producto = $1`, id).
-		Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr)
+	err := db.DB.QueryRow(cols+` WHERE p.ID_Producto = $1`, id).
+		Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria)
 	if err != nil {
 		return nil
 	}
@@ -93,7 +96,7 @@ func SubcategoriasUnicas(categoriaID int) []string {
 		 WHERE CategoriaID = $1 AND Subcategoria IS NOT NULL AND Subcategoria != ''
 		 ORDER BY Subcategoria`,
 		categoriaID,
-	)
+	) // esta query no usa el JOIN, no necesita prefijo de tabla
 	if err != nil {
 		return nil
 	}

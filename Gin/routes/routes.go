@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"Gin/auth"
 	carritoPkg "Gin/carrito"
@@ -80,6 +81,16 @@ func SetupRoutes(r *gin.Engine) {
 		// strSlice crea un slice de strings desde argumentos variádicos.
 		// Se usa en el formulario de admin: {{ range $t := strSlice "XS" "S" "M" ... }}
 		"strSlice": func(items ...string) []string { return items },
+		// toLower / toUpper — para construir URLs y etiquetas a partir del nombre de categoría
+		"toLower": strings.ToLower,
+		"toUpper": func(s string) string {
+			if s == "" {
+				return s
+			}
+			r := []rune(s)
+			r[0] = unicode.ToUpper(r[0])
+			return strings.ToUpper(string(r))
+		},
 	})
 
 	r.Static("/static", "./static")
@@ -91,21 +102,33 @@ func SetupRoutes(r *gin.Engine) {
 		c.HTML(http.StatusOK, "index.html", datosBase(c))
 	})
 
-	r.GET("/hombre", func(c *gin.Context) {
-		productos := productoPkg.ListarPorCategoria(1)
-		data := datosBase(c)
-		data["productos"] = productos
-		data["subcategorias"] = productoPkg.SubcategoriasUnicas(1)
-		c.HTML(http.StatusOK, "Hombre.html", data)
-	})
+	// handlerCategoria es la función reutilizable para cualquier categoría de la tienda.
+	// Recibe el ID de la categoría en la DB y el subtítulo del header.
+	// Para agregar una nueva categoría en el futuro solo hace falta añadir una línea abajo
+	// y crear el registro correspondiente en la tabla `categorias`.
+	handlerCategoria := func(categoriaID int, subtitulo string) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			// Buscar el nombre de la categoría desde la DB para no hardcodearlo aquí
+			cats := db.ListarCategorias()
+			var nombreActual string
+			for _, cat := range cats {
+				if cat.ID == categoriaID {
+					nombreActual = cat.Nombre
+					break
+				}
+			}
+			data := datosBase(c)
+			data["productos"] = productoPkg.ListarPorCategoria(categoriaID)
+			data["subcategorias"] = productoPkg.SubcategoriasUnicas(categoriaID)
+			data["categorias"] = cats
+			data["categoriaActual"] = nombreActual
+			data["subtitulo"] = subtitulo
+			c.HTML(http.StatusOK, "categoria.html", data)
+		}
+	}
 
-	r.GET("/mujer", func(c *gin.Context) {
-		productos := productoPkg.ListarPorCategoria(2)
-		data := datosBase(c)
-		data["productos"] = productos
-		data["subcategorias"] = productoPkg.SubcategoriasUnicas(2)
-		c.HTML(http.StatusOK, "Mujer.html", data)
-	})
+	r.GET("/hombre", handlerCategoria(1, "Ropa exclusivamente para hombres"))
+	r.GET("/mujer", handlerCategoria(2, "Ropa exclusivamente para mujeres"))
 
 	r.GET("/producto/:id", func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -433,16 +456,47 @@ func SetupRoutes(r *gin.Engine) {
 			c.Redirect(http.StatusSeeOther, "/")
 			return
 		}
+
+		// Datos completos del pedido para el recibo
 		var p models.Pedido
 		db.DB.QueryRow(`
-			SELECT ID_Pedido, COALESCE(nombre_envio,''), COALESCE(apellido_envio,''),
-			       COALESCE(email_contacto,''), Total, Estado, COALESCE(metodo_pago,'')
+			SELECT ID_Pedido,
+			       COALESCE(nombre_envio,''), COALESCE(apellido_envio,''),
+			       COALESCE(email_contacto,''), Total, Estado,
+			       COALESCE(metodo_pago,''), COALESCE(costo_envio,0),
+			       COALESCE(direccion,''), COALESCE(ciudad,''),
+			       COALESCE(departamento,''), Fecha
 			FROM pedidos WHERE ID_Pedido = $1`, pedidoID).
 			Scan(&p.ID_Pedido, &p.NombreEnvio, &p.ApellidoEnvio,
-				&p.EmailContacto, &p.Total, &p.Estado, &p.MetodoPago)
+				&p.EmailContacto, &p.Total, &p.Estado,
+				&p.MetodoPago, &p.CostoEnvio,
+				&p.Direccion, &p.Ciudad, &p.Departamento, &p.Fecha)
+
+		// Ítems del pedido para el recibo
+		type ItemRecibo struct {
+			Nombre         string
+			Talla          string
+			Cantidad       int
+			PrecioUnitario float64
+			Subtotal       float64
+		}
+		rows, _ := db.DB.Query(`
+			SELECT Nombre, COALESCE(Talla,''), Cantidad, PrecioUnitario, Subtotal
+			FROM pedido_items WHERE PedidoID = $1 ORDER BY ID_Item`, pedidoID)
+		var items []ItemRecibo
+		if rows != nil {
+			defer rows.Close()
+			for rows.Next() {
+				var it ItemRecibo
+				rows.Scan(&it.Nombre, &it.Talla, &it.Cantidad, &it.PrecioUnitario, &it.Subtotal)
+				items = append(items, it)
+			}
+		}
 
 		data := datosBase(c)
 		data["pedido"] = p
+		data["items"] = items
+		data["subtotalProductos"] = p.Total - p.CostoEnvio
 		c.HTML(http.StatusOK, "checkout_confirmacion.html", data)
 	})
 

@@ -17,15 +17,16 @@ type Categoria struct {
 // Producto representa un artículo del catálogo de la tienda.
 // Los datos vienen de la tabla 'productos' de PostgreSQL.
 type Producto struct {
-	ID           int
-	Nombre       string
-	Descripcion  string
-	Precio       float64
-	Talla        string   // primera talla disponible (valor por defecto)
-	Tallas       []string // todas las tallas disponibles, ej: ["S","M","L"]
-	Imagen       string
-	CategoriaID  int
-	Subcategoria string
+	ID              int
+	Nombre          string
+	Descripcion     string
+	Precio          float64
+	Talla           string   // primera talla disponible (valor por defecto)
+	Tallas          []string // todas las tallas disponibles, ej: ["S","M","L"]
+	Imagen          string
+	CategoriaID     int
+	NombreCategoria string // obtenido por JOIN con la tabla categorias
+	Subcategoria    string
 }
 
 // ItemCarrito representa un producto dentro del carrito de compras (en sesión).

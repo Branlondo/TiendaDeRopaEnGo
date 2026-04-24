@@ -129,10 +129,12 @@
                                 <div class="text-muted small">{{ .Subcategoria }}</div>
                             </td>
                             <td>
-                                {{ if eq .CategoriaID 111 }}
-                                <span class="badge" style="background:#0ea5e9;">Hombre</span>
+                                {{ if eq .NombreCategoria "Hombre" }}
+                                <span class="badge" style="background:#0ea5e9;">{{ .NombreCategoria }}</span>
+                                {{ else if eq .NombreCategoria "Mujer" }}
+                                <span class="badge" style="background:#ec4899;">{{ .NombreCategoria }}</span>
                                 {{ else }}
-                                <span class="badge" style="background:#ec4899;">Mujer</span>
+                                <span class="badge bg-secondary">{{ .NombreCategoria }}</span>
                                 {{ end }}
                             </td>
                             <td class="fw-bold">${{ printf "%.2f" .Precio }}</td>

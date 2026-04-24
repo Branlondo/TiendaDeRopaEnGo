@@ -87,13 +87,64 @@
         }
         .btn-shop:hover { background:#0f172a; color:#fff; }
 
+        .btn-print {
+            display:block; text-align:center; background:#f1f5f9; color:#475569;
+            border-radius:10px; padding:12px; font-weight:600;
+            text-decoration:none; transition:background .2s; font-size:14px;
+            border:1px solid #e2e8f0; cursor:pointer; width:100%;
+            margin-bottom:12px;
+        }
+        .btn-print:hover { background:#e2e8f0; color:#1e293b; }
+
         .checkout-footer { text-align:center; padding:20px; font-size:12px; color:#94a3b8; }
         .checkout-footer a { color:#94a3b8; text-decoration:none; margin:0 8px; }
+
+        /* ═══════════════════════════════════════════
+           RECIBO — solo visible al imprimir
+           ═══════════════════════════════════════════ */
+        #recibo { display:none; }
+
+        @media print {
+            /* Ocultar todo excepto el recibo */
+            body > *:not(#recibo) { display:none !important; }
+            #recibo {
+                display:block !important;
+                font-family:'Courier New', monospace;
+                font-size:12px;
+                color:#000;
+                max-width:380px;
+                margin:0 auto;
+                padding:20px;
+            }
+            .recibo-header { text-align:center; border-bottom:2px dashed #000; padding-bottom:12px; margin-bottom:16px; }
+            .recibo-logo   { font-size:22px; font-weight:900; letter-spacing:4px; }
+            .recibo-sub    { font-size:10px; margin-top:2px; }
+            .recibo-section { margin-bottom:12px; }
+            .recibo-section-title {
+                font-weight:700; font-size:11px; text-transform:uppercase;
+                letter-spacing:1px; border-bottom:1px dashed #000;
+                padding-bottom:4px; margin-bottom:8px;
+            }
+            .recibo-row { display:flex; justify-content:space-between; margin-bottom:3px; }
+            .recibo-row.total-row {
+                font-weight:900; font-size:14px;
+                border-top:2px dashed #000; padding-top:6px; margin-top:4px;
+            }
+            .recibo-item-nombre { flex:1; }
+            .recibo-item-qty    { width:30px; text-align:center; }
+            .recibo-item-precio { width:80px; text-align:right; }
+            .recibo-footer {
+                text-align:center; border-top:2px dashed #000;
+                padding-top:12px; margin-top:16px; font-size:11px;
+            }
+            .recibo-footer p { margin:2px 0; }
+            @page { margin:10mm; }
+        }
     </style>
 </head>
 <body>
 
-<!-- Header -->
+<!-- Header (se oculta al imprimir) -->
 <header class="checkout-header">
     <a href="/" class="brand-logo">
         <img src="/static/assets/Unilogo.ico" alt="Logo" />
@@ -160,9 +211,17 @@
             <div class="info-box" style="grid-column:span 2;">
                 <div class="info-box-label">Envío a</div>
                 <div class="info-box-val">{{ .pedido.NombreEnvio }} {{ .pedido.ApellidoEnvio }}</div>
-                <div class="info-box-sub">Entrega Estándar Nacional — 2 a 7 días hábiles</div>
+                {{ if .pedido.Direccion }}
+                <div class="info-box-sub">{{ .pedido.Direccion }}{{ if .pedido.Ciudad }}, {{ .pedido.Ciudad }}{{ end }}{{ if .pedido.Departamento }}, {{ .pedido.Departamento }}{{ end }}</div>
+                {{ end }}
+                <div class="info-box-sub" style="margin-top:4px;">Entrega Estándar Nacional — 2 a 7 días hábiles</div>
             </div>
         </div>
+
+        <!-- Botón imprimir recibo -->
+        <button class="btn-print" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i>Imprimir recibo
+        </button>
 
         <!-- CTA -->
         <a href="/" class="btn-shop">
@@ -178,6 +237,97 @@
     <a href="/">Política de privacidad</a>
     <a href="/">Contacto</a>
 </footer>
+
+<!-- ═══════════════════════════════════════════════════════
+     RECIBO — solo se muestra al hacer Imprimir (CSS @media print)
+     ═══════════════════════════════════════════════════════ -->
+<div id="recibo">
+
+    <!-- Encabezado de la tienda -->
+    <div class="recibo-header">
+        <div class="recibo-logo">RFF</div>
+        <div class="recibo-sub">Ropa Flash Fashion</div>
+        <div class="recibo-sub" style="margin-top:6px;">NIT: 900.123.456-7 · Bogotá, Colombia</div>
+        <div class="recibo-sub">www.ropafashflash.com</div>
+        <div style="margin-top:10px;font-size:13px;font-weight:700;">RECIBO DE COMPRA</div>
+        <div class="recibo-sub">Pedido #{{ .pedido.ID_Pedido }} &nbsp;|&nbsp; {{ .pedido.Fecha }}</div>
+    </div>
+
+    <!-- Datos del cliente -->
+    <div class="recibo-section">
+        <div class="recibo-section-title">Cliente</div>
+        <div>{{ .pedido.NombreEnvio }} {{ .pedido.ApellidoEnvio }}</div>
+        {{ if .pedido.EmailContacto }}<div>{{ .pedido.EmailContacto }}</div>{{ end }}
+        {{ if .pedido.Direccion }}
+        <div>{{ .pedido.Direccion }}</div>
+        <div>{{ .pedido.Ciudad }}{{ if .pedido.Departamento }}, {{ .pedido.Departamento }}{{ end }}</div>
+        {{ end }}
+    </div>
+
+    <!-- Productos -->
+    <div class="recibo-section">
+        <div class="recibo-section-title">Productos</div>
+        <!-- Cabecera de columnas -->
+        <div class="recibo-row" style="font-weight:700;font-size:10px;border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:6px;">
+            <span class="recibo-item-nombre">ARTÍCULO</span>
+            <span class="recibo-item-qty">CANT</span>
+            <span class="recibo-item-precio">SUBTOTAL</span>
+        </div>
+        {{ if .items }}
+        {{ range .items }}
+        <div class="recibo-row">
+            <span class="recibo-item-nombre">
+                {{ .Nombre }}{{ if .Talla }} ({{ .Talla }}){{ end }}
+                <br><span style="font-size:10px;color:#555;">${{ printf "%.2f" .PrecioUnitario }} c/u</span>
+            </span>
+            <span class="recibo-item-qty">{{ .Cantidad }}</span>
+            <span class="recibo-item-precio">${{ printf "%.2f" .Subtotal }}</span>
+        </div>
+        {{ end }}
+        {{ else }}
+        <div style="font-style:italic;color:#555;">Sin detalle de productos</div>
+        {{ end }}
+    </div>
+
+    <!-- Totales -->
+    <div class="recibo-section">
+        <div class="recibo-section-title">Resumen</div>
+        <div class="recibo-row">
+            <span>Subtotal productos</span>
+            <span>${{ printf "%.2f" .subtotalProductos }}</span>
+        </div>
+        <div class="recibo-row">
+            <span>Envío nacional</span>
+            <span>${{ printf "%.0f" .pedido.CostoEnvio }}</span>
+        </div>
+        <div class="recibo-row total-row">
+            <span>TOTAL</span>
+            <span>COP ${{ printf "%.2f" .pedido.Total }}</span>
+        </div>
+    </div>
+
+    <!-- Pago -->
+    <div class="recibo-section">
+        <div class="recibo-section-title">Pago</div>
+        <div class="recibo-row">
+            <span>Método</span>
+            <span style="text-transform:capitalize;">{{ .pedido.MetodoPago }}</span>
+        </div>
+        <div class="recibo-row">
+            <span>Estado</span>
+            <span>Pendiente de confirmación</span>
+        </div>
+    </div>
+
+    <!-- Pie del recibo -->
+    <div class="recibo-footer">
+        <p style="font-size:13px;font-weight:700;">¡Gracias por tu compra!</p>
+        <p>Tu pedido llegará en 2 a 7 días hábiles.</p>
+        <p style="margin-top:8px;">Este documento es un comprobante de tu pedido.</p>
+        <p>No tiene validez fiscal como factura de venta.</p>
+    </div>
+
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
