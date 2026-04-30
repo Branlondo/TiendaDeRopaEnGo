@@ -58,70 +58,95 @@
             </div>
         </section>
         {{ else }}
-        <!-- Product section-->
+
+        <!-- ── Detalle del producto ─────────────────────────────────────────── -->
         <section class="py-5">
-            <div class="container px-4 px-lg-5 my-5">
-                <div class="row gx-4 gx-lg-5 align-items-center">
-                    <div class="col-md-6">
-                        <img class="card-img-top mb-5 mb-md-0" src="{{ .producto.Imagen }}" alt="{{ .producto.Nombre }}" />
-                    </div>
-                    <div class="col-md-6">
-                        <div class="small mb-1">SKU: RFF-{{ .producto.ID }}</div>
-                        <h1 class="display-5 fw-bolder">{{ .producto.Nombre }}</h1>
-                        <div class="fs-5 mb-3">
-                            <span>{{ formatCOP .producto.Precio }} COP</span>
+            <div class="container px-4 px-lg-5 my-3">
+                <div class="row gx-5 align-items-start">
+
+                    <!-- Galería de imágenes -->
+                    <div class="col-md-7">
+                        <div class="d-flex gap-3">
+                            <!-- Miniaturas verticales -->
+                            {{ if gt (len .producto.Imagenes) 1 }}
+                            <div class="d-flex flex-column gap-2" style="width:72px;flex-shrink:0;">
+                                {{ range $i, $img := .producto.Imagenes }}
+                                <img src="{{ $img }}" alt="Vista {{ $i }}"
+                                     class="thumb-img {{ if eq $i 0 }}thumb-activa{{ end }}"
+                                     onclick="cambiarImagen(this)"
+                                     style="width:72px;height:90px;object-fit:contain;background:#f5f5f5;cursor:pointer;border:2px solid {{ if eq $i 0 }}#1e293b{{ else }}transparent{{ end }};border-radius:4px;">
+                                {{ end }}
+                            </div>
+                            {{ end }}
+                            <!-- Imagen principal -->
+                            <div class="flex-grow-1">
+                                <img id="imgPrincipal"
+                                     src="{{ if .producto.Imagenes }}{{ index .producto.Imagenes 0 }}{{ else }}{{ .producto.Imagen }}{{ end }}"
+                                     alt="{{ .producto.Nombre }}"
+                                     style="width:100%;aspect-ratio:3/4;object-fit:contain;background:#f5f5f5;border-radius:4px;">
+                            </div>
                         </div>
-                        <p class="lead">{{ .producto.Descripcion }}</p>
+                    </div>
 
-                        <!--
-                            FORMULARIO DE AGREGAR AL CARRITO
-                            method="POST" action="/carrito/agregar" → Go recibe los campos
-                            y llama a carrito.Agregar() antes de redirigir de vuelta aquí.
-                        -->
+                    <!-- Información y formulario -->
+                    <div class="col-md-5 pt-2">
+                        <div class="small text-muted mb-1">SKU: RFF-{{ .producto.ID }}</div>
+                        <h1 class="fw-bolder mb-1" style="font-size:1.75rem;">{{ .producto.Nombre }}</h1>
+                        <div class="fs-5 fw-bold mb-3">{{ formatCOP .producto.Precio }} COP</div>
+                        <p class="text-muted mb-4">{{ .producto.Descripcion }}</p>
+
                         <form method="POST" action="/carrito/agregar" id="formCarrito">
-                            <!-- Campo oculto: ID del producto que se está viendo -->
                             <input type="hidden" name="productoID" value="{{ .producto.ID }}">
-
-                            <!--
-                                Campo oculto para la talla: empieza vacío.
-                                El pequeño script al final de la página lo rellena
-                                cuando el usuario hace clic en uno de los botones de talla.
-                                Esto es interacción de UI pura → JS está bien aquí.
-                            -->
                             <input type="hidden" name="talla" id="tallaInput" value="">
 
-                            <!-- Selector de talla -->
                             <div class="mb-4">
                                 <label class="fw-bold mb-2">Talla:</label>
                                 <div class="d-flex gap-2 flex-wrap mt-1">
                                     {{ range .producto.Tallas }}
-                                    <button type="button"
-                                        class="btn btn-outline-dark talla-btn"
-                                        data-talla="{{ . }}">
-                                        {{ . }}
-                                    </button>
+                                    <button type="button" class="btn btn-outline-dark talla-btn" data-talla="{{ . }}">{{ . }}</button>
                                     {{ end }}
                                 </div>
-                                <div id="tallaError" class="text-danger mt-2" style="display:none;">
-                                    Por favor selecciona una talla.
-                                </div>
+                                <div id="tallaError" class="text-danger mt-2" style="display:none;">Por favor selecciona una talla.</div>
                             </div>
 
-                            <!-- Cantidad + botón submit -->
                             <div class="d-flex align-items-center gap-3">
-                                <input class="form-control text-center" name="cantidad"
-                                    id="inputQuantity" type="number" value="1" min="1"
-                                    style="max-width: 3rem" />
-                                <button class="btn btn-outline-dark flex-shrink-0" type="submit">
-                                    <i class="bi-cart-fill me-1"></i>
-                                    Agregar al carrito
+                                <input class="form-control text-center" name="cantidad" id="inputQuantity"
+                                       type="number" value="1" min="1" style="max-width:3.5rem">
+                                <button class="btn btn-dark flex-grow-1 py-2 fw-bold" type="submit">
+                                    <i class="bi-cart-fill me-2"></i>Agregar al carrito
                                 </button>
                             </div>
                         </form>
                     </div>
+
                 </div>
             </div>
         </section>
+
+        <!-- ── Completa tu outfit ──────────────────────────────────────────── -->
+        {{ if .relacionados }}
+        <section class="py-5" style="border-top:1px solid #e2e8f0;">
+            <div class="container px-4 px-lg-5">
+                <h4 class="fw-bold mb-4">Completa tu outfit</h4>
+                <div class="row g-3 row-cols-2 row-cols-md-4">
+                    {{ range .relacionados }}
+                    <div class="col">
+                        <a href="/producto/{{ .ID }}" class="text-decoration-none text-dark d-block producto-item">
+                            <div class="overflow-hidden mb-2" style="aspect-ratio:2/3;background:#f5f5f5;border-radius:4px;">
+                                <img src="{{ .Imagen }}" alt="{{ .Nombre }}"
+                                     style="width:100%;height:100%;object-fit:cover;object-position:top;transition:transform .4s ease;">
+                            </div>
+                            <p class="mb-0 fw-semibold" style="font-size:14px;">{{ .Nombre }}</p>
+                            <p class="mb-0 text-muted" style="font-size:12px;">{{ .Subcategoria }}</p>
+                            <p class="mb-0 fw-bold" style="font-size:14px;">{{ formatCOP .Precio }} COP</p>
+                        </a>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+        </section>
+        {{ end }}
+
         {{ end }}
 
         <!-- Footer-->
@@ -207,35 +232,43 @@
             escribir el valor en el campo oculto #tallaInput del formulario.
             No toca datos del servidor ni el carrito → JS es correcto aquí.
         -->
+        <style>
+            .producto-item:hover img { transform: scale(1.04); }
+        </style>
         <script>
+        // ── Galería: cambiar imagen principal al hacer clic en miniatura ──────
+        function cambiarImagen(thumb) {
+            document.getElementById("imgPrincipal").src = thumb.src;
+            document.querySelectorAll(".thumb-img").forEach(function(t) {
+                t.style.borderColor = "transparent";
+            });
+            thumb.style.borderColor = "#1e293b";
+        }
+
+        // ── Selector de talla ─────────────────────────────────────────────────
         document.addEventListener("DOMContentLoaded", function () {
             var tallaBtns = document.querySelectorAll(".talla-btn");
             var tallaInput = document.getElementById("tallaInput");
             var tallaError = document.getElementById("tallaError");
             var form = document.getElementById("formCarrito");
 
-            // Si solo hay una talla, la seleccionamos automáticamente
             if (tallaBtns.length === 1) {
                 tallaBtns[0].classList.replace("btn-outline-dark", "btn-dark");
                 tallaInput.value = tallaBtns[0].getAttribute("data-talla");
             }
 
-            // Al hacer clic en un botón de talla: marcar activo + llenar campo oculto
             tallaBtns.forEach(function (btn) {
                 btn.addEventListener("click", function () {
-                    tallaBtns.forEach(function (b) {
-                        b.classList.replace("btn-dark", "btn-outline-dark");
-                    });
+                    tallaBtns.forEach(function (b) { b.classList.replace("btn-dark", "btn-outline-dark"); });
                     btn.classList.replace("btn-outline-dark", "btn-dark");
                     tallaInput.value = btn.getAttribute("data-talla");
                     if (tallaError) tallaError.style.display = "none";
                 });
             });
 
-            // Validar que se seleccionó una talla antes de enviar el formulario
             form.addEventListener("submit", function (e) {
                 if (!tallaInput.value) {
-                    e.preventDefault(); // cancelar el POST
+                    e.preventDefault();
                     if (tallaError) tallaError.style.display = "block";
                 }
             });

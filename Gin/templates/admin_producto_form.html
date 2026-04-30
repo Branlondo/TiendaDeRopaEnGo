@@ -14,6 +14,8 @@
         .talla-check:checked + label { background:#1e293b; color:#fff; border-color:#1e293b; }
         .talla-label { cursor:pointer;border:1px solid #cbd5e1;border-radius:6px;padding:6px 14px;font-size:.875rem;transition:.15s; }
         .talla-label:hover { border-color:#1e293b; }
+        .btn-upload { font-size:12px; white-space:nowrap; }
+        .upload-progress { display:none; font-size:11px; color:#64748b; margin-top:3px; }
     </style>
 </head>
 <body>
@@ -140,26 +142,104 @@
                 </div>
             </div>
 
-            <!-- Columna derecha: imagen -->
+            <!-- Columna derecha: imágenes + relacionados -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm">
+
+                <!-- Galería de imágenes -->
+                <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
-                        <h6 class="fw-bold">Imagen del producto</h6>
+                        <h6 class="fw-bold">Imágenes del producto</h6>
+                        <p class="text-muted small mb-0">La marcada como <strong>Portada</strong> es la imagen principal.</p>
                     </div>
                     <div class="card-body p-4">
-                        <!-- Vista previa -->
-                        <img id="previstaImagen" src="{{ if .producto.Imagen }}{{ .producto.Imagen }}{{ else }}{{ end }}"
-                             alt="Vista previa" class="preview-img mb-3"
-                             onerror="this.style.display='none'" onload="this.style.display='block'">
+                        <!-- Campo oculto que guarda la URL de la portada -->
+                        <input type="hidden" name="portada" id="portadaURL" value="{{ .producto.Imagen }}">
 
-                        <!-- URL de imagen -->
-                        <label class="form-label fw-bold">URL de la imagen</label>
-                        <input type="text" name="imagen" id="inputImagen" class="form-control"
-                               placeholder="https://... o /static/assets/..."
-                               value="{{ .producto.Imagen }}">
-                        <div class="form-text">Pega la URL de una imagen. Aparecerá la vista previa arriba.</div>
+                        <div id="listaImagenes">
+                            {{ if .imagenesGaleria }}
+                            {{ range $i, $url := .imagenesGaleria }}
+                            <div class="imagen-row mb-3 p-2 border rounded" style="background:#f8fafc;">
+                                <div class="d-flex gap-2 align-items-start">
+                                    <img src="{{ $url }}" class="rounded thumb-prev"
+                                         style="width:64px;height:64px;object-fit:cover;flex-shrink:0;background:#e2e8f0;"
+                                         onerror="this.style.opacity='.3'">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex gap-1 mb-1">
+                                            <input type="text" name="imagenes" class="form-control form-control-sm url-img"
+                                                   value="{{ $url }}" placeholder="https://... o pega una URL">
+                                            <label class="btn btn-outline-secondary btn-sm btn-upload mb-0" title="Subir desde dispositivo">
+                                                <i class="bi-upload"></i>
+                                                <input type="file" accept="image/*" class="file-input" style="display:none;">
+                                            </label>
+                                        </div>
+                                        <div class="upload-progress"><i class="bi-arrow-repeat"></i> Subiendo...</div>
+                                        <div class="d-flex gap-2 align-items-center mt-1">
+                                            <input type="radio" name="portada_radio" class="radio-portada"
+                                                   value="{{ $url }}" {{ if eq $i 0 }}checked{{ end }}>
+                                            <label class="small mb-0">Portada</label>
+                                            <button type="button" class="btn btn-outline-danger btn-sm ms-auto py-0 px-2 eliminar-img">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{ end }}
+                            {{ else }}
+                            <div class="imagen-row mb-3 p-2 border rounded" style="background:#f8fafc;">
+                                <div class="d-flex gap-2 align-items-start">
+                                    <img src="" class="rounded thumb-prev"
+                                         style="width:64px;height:64px;object-fit:cover;flex-shrink:0;background:#e2e8f0;">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex gap-1 mb-1">
+                                            <input type="text" name="imagenes" class="form-control form-control-sm url-img"
+                                                   value="" placeholder="https://... o pega una URL">
+                                            <label class="btn btn-outline-secondary btn-sm btn-upload mb-0" title="Subir desde dispositivo">
+                                                <i class="bi-upload"></i>
+                                                <input type="file" accept="image/*" class="file-input" style="display:none;">
+                                            </label>
+                                        </div>
+                                        <div class="upload-progress"><i class="bi-arrow-repeat"></i> Subiendo...</div>
+                                        <div class="d-flex gap-2 align-items-center mt-1">
+                                            <input type="radio" name="portada_radio" class="radio-portada" value="" checked>
+                                            <label class="small mb-0">Portada</label>
+                                            <button type="button" class="btn btn-outline-danger btn-sm ms-auto py-0 px-2 eliminar-img">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{ end }}
+                        </div>
+
+                        <button type="button" id="btnAgregarImg" class="btn btn-outline-secondary btn-sm w-100">
+                            <i class="bi-plus-lg me-1"></i> Agregar imagen
+                        </button>
                     </div>
                 </div>
+
+                <!-- Productos relacionados -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+                        <h6 class="fw-bold">Completa tu outfit</h6>
+                        <p class="text-muted small mb-0">Selecciona productos que se mostrarán como recomendados.</p>
+                    </div>
+                    <div class="card-body p-4" style="max-height:320px;overflow-y:auto;">
+                        {{ range .todosProductos }}
+                        {{ if ne .ID $.producto.ID }}
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input type="checkbox" name="relacionados" value="{{ .ID }}" id="rel_{{ .ID }}"
+                                   class="form-check-input mt-0"
+                                   {{ if contieneInt $.relacionadosIDs .ID }}checked{{ end }}>
+                            <img src="{{ .Imagen }}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;background:#f1f5f9;"
+                                 onerror="this.style.opacity='.3'">
+                            <label for="rel_{{ .ID }}" class="small mb-0 flex-grow-1" style="cursor:pointer;">
+                                {{ .Nombre }}
+                                <span class="text-muted d-block" style="font-size:11px;">{{ .NombreCategoria }} · {{ .Subcategoria }}</span>
+                            </label>
+                        </div>
+                        {{ end }}
+                        {{ end }}
+                    </div>
+                </div>
+
             </div>
 
         </div><!-- /row -->
@@ -182,16 +262,114 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Previsualización de imagen en tiempo real: al escribir en el campo URL
-// se actualiza la imagen sin necesidad de guardar.
-document.getElementById("inputImagen").addEventListener("input", function () {
-    var img = document.getElementById("previstaImagen");
-    img.src = this.value;
-    img.style.display = this.value ? "block" : "none";
+// ─── Galería de imágenes dinámica con subida desde dispositivo ───────────────
+
+function filaImagen(url) {
+    var div = document.createElement("div");
+    div.className = "imagen-row mb-3 p-2 border rounded";
+    div.style.background = "#f8fafc";
+    div.innerHTML = `
+        <div class="d-flex gap-2 align-items-start">
+            <img src="${url}" class="rounded thumb-prev"
+                 style="width:64px;height:64px;object-fit:cover;flex-shrink:0;background:#e2e8f0;"
+                 onerror="this.style.opacity='.3'">
+            <div class="flex-grow-1">
+                <div class="d-flex gap-1 mb-1">
+                    <input type="text" name="imagenes" class="form-control form-control-sm url-img"
+                           value="${url}" placeholder="https://... o pega una URL">
+                    <label class="btn btn-outline-secondary btn-sm btn-upload mb-0" title="Subir desde dispositivo">
+                        <i class="bi-upload"></i>
+                        <input type="file" accept="image/*" class="file-input" style="display:none;">
+                    </label>
+                </div>
+                <div class="upload-progress"><i class="bi-arrow-repeat"></i> Subiendo...</div>
+                <div class="d-flex gap-2 align-items-center mt-1">
+                    <input type="radio" name="portada_radio" class="radio-portada" value="${url}">
+                    <label class="small mb-0">Portada</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm ms-auto py-0 px-2 eliminar-img">✕</button>
+                </div>
+            </div>
+        </div>`;
+    return div;
+}
+
+// ── Actualizar URL, miniatura y radio cuando cambia el input de texto ────────
+document.getElementById("listaImagenes").addEventListener("input", function (e) {
+    if (e.target.classList.contains("url-img")) {
+        var row  = e.target.closest(".imagen-row");
+        var img  = row.querySelector(".thumb-prev");
+        var radio = row.querySelector(".radio-portada");
+        img.src  = e.target.value;
+        img.style.opacity = "1";
+        radio.value = e.target.value;
+        if (radio.checked) document.getElementById("portadaURL").value = e.target.value;
+    }
 });
 
-// Registra la función slice en el contexto del template
-// (Go templates no la tienen por defecto; se pasa como FuncMap personalizado)
+// ── Subida de archivo al servidor vía fetch ──────────────────────────────────
+document.getElementById("listaImagenes").addEventListener("change", function (e) {
+    // Radio portada
+    if (e.target.classList.contains("radio-portada")) {
+        document.getElementById("portadaURL").value = e.target.value;
+        return;
+    }
+    // Selección de archivo
+    if (e.target.classList.contains("file-input") && e.target.files.length > 0) {
+        var row      = e.target.closest(".imagen-row");
+        var urlInput = row.querySelector(".url-img");
+        var radio    = row.querySelector(".radio-portada");
+        var thumb    = row.querySelector(".thumb-prev");
+        var progress = row.querySelector(".upload-progress");
+        var btn      = row.querySelector(".btn-upload");
+
+        var formData = new FormData();
+        formData.append("archivo", e.target.files[0]);
+
+        progress.style.display = "block";
+        btn.classList.add("disabled");
+
+        fetch("/admin/uploads/imagen", { method: "POST", body: formData })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) { alert("Error: " + data.error); return; }
+                urlInput.value  = data.url;
+                thumb.src       = data.url;
+                thumb.style.opacity = "1";
+                radio.value     = data.url;
+                if (radio.checked) document.getElementById("portadaURL").value = data.url;
+            })
+            .catch(function() { alert("Error al conectar con el servidor."); })
+            .finally(function() {
+                progress.style.display = "none";
+                btn.classList.remove("disabled");
+                e.target.value = ""; // permite volver a seleccionar el mismo archivo
+            });
+    }
+});
+
+// ── Eliminar fila ────────────────────────────────────────────────────────────
+document.getElementById("listaImagenes").addEventListener("click", function (e) {
+    if (e.target.closest(".eliminar-img")) {
+        var rows = document.querySelectorAll(".imagen-row");
+        if (rows.length > 1) {
+            var row = e.target.closest(".imagen-row");
+            var wasPortada = row.querySelector(".radio-portada").checked;
+            row.remove();
+            if (wasPortada) {
+                var first = document.querySelector(".radio-portada");
+                if (first) {
+                    first.checked = true;
+                    document.getElementById("portadaURL").value = first.value;
+                }
+            }
+        }
+    }
+});
+
+// ── Agregar nueva fila vacía ─────────────────────────────────────────────────
+document.getElementById("btnAgregarImg").addEventListener("click", function () {
+    document.getElementById("listaImagenes").appendChild(filaImagen(""));
+});
 </script>
 </body>
 </html>

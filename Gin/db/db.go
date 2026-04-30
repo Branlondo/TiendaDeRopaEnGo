@@ -172,6 +172,24 @@ func crearTablas() {
 			PrecioUnitario  FLOAT         NOT NULL,
 			Subtotal        FLOAT         NOT NULL
 		);`,
+
+		// ── Producto_Imagenes ─────────────────────────────────────────────────
+		// Galería de imágenes de un producto. EsPortada = imagen principal.
+		`CREATE TABLE IF NOT EXISTS producto_imagenes (
+			ID_Imagen   SERIAL        PRIMARY KEY,
+			ProductoID  INTEGER       NOT NULL REFERENCES productos(ID_Producto) ON DELETE CASCADE,
+			ImagenURL   VARCHAR(500)  NOT NULL,
+			EsPortada   BOOLEAN       NOT NULL DEFAULT FALSE
+		);`,
+
+		// ── Producto_Relaciones ───────────────────────────────────────────────
+		// Relaciona productos para la sección "Completa tu outfit".
+		// La relación es bidireccional: A→B implica B→A en las queries.
+		`CREATE TABLE IF NOT EXISTS producto_relaciones (
+			ProductoID    INTEGER  NOT NULL REFERENCES productos(ID_Producto) ON DELETE CASCADE,
+			RelacionadoID INTEGER  NOT NULL REFERENCES productos(ID_Producto) ON DELETE CASCADE,
+			PRIMARY KEY (ProductoID, RelacionadoID)
+		);`,
 	}
 
 	for _, stmt := range sentencias {

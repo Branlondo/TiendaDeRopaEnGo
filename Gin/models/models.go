@@ -25,7 +25,8 @@ type Producto struct {
 	Precio          float64
 	Talla           string   // primera talla disponible (valor por defecto)
 	Tallas          []string // todas las tallas disponibles, ej: ["S","M","L"]
-	Imagen          string
+	Imagen          string   // URL de la imagen portada (imagen principal)
+	Imagenes        []string // todas las imágenes de la galería (incluye portada)
 	CategoriaID     int
 	NombreCategoria string // obtenido por JOIN con la tabla categorias
 	Subcategoria    string

@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -69,10 +71,19 @@ func SetupRoutes(r *gin.Engine) {
 		"join": func(slice []string, sep string) string {
 			return strings.Join(slice, sep)
 		},
-		// contiene comprueba si un item está en un slice (para marcar checkboxes)
+		// contiene comprueba si un item está en un slice de strings (checkboxes de tallas)
 		"contiene": func(slice []string, item string) bool {
 			for _, s := range slice {
 				if s == item {
+					return true
+				}
+			}
+			return false
+		},
+		// contieneInt comprueba si un entero está en un slice de ints (checkboxes de relacionados)
+		"contieneInt": func(slice []int, item int) bool {
+			for _, v := range slice {
+				if v == item {
 					return true
 				}
 			}
@@ -158,6 +169,7 @@ func SetupRoutes(r *gin.Engine) {
 		}
 		data := datosBase(c)
 		data["producto"] = p
+		data["relacionados"] = productoPkg.ObtenerRelacionados(id)
 		c.HTML(http.StatusOK, "product.html", data)
 	})
 
@@ -268,9 +280,12 @@ func SetupRoutes(r *gin.Engine) {
 	admin.GET("/productos/nuevo", func(c *gin.Context) {
 		data := datosBase(c)
 		data["paginaActual"] = "productos"
-		data["producto"] = &models.Producto{CategoriaID: 1} // valores por defecto
+		data["producto"] = &models.Producto{CategoriaID: 1}
 		data["esNuevo"] = true
 		data["categorias"] = db.ListarCategorias()
+		data["todosProductos"] = productoPkg.Listar()
+		data["relacionadosIDs"] = []int{}
+		data["imagenesGaleria"] = []string{}
 		c.HTML(http.StatusOK, "admin_producto_form.html", data)
 	})
 
@@ -279,14 +294,30 @@ func SetupRoutes(r *gin.Engine) {
 		nombre := c.PostForm("nombre")
 		descripcion := c.PostForm("descripcion")
 		precio, _ := strconv.ParseFloat(c.PostForm("precio"), 64)
-		imagen := c.PostForm("imagen")
 		categoriaID, _ := strconv.Atoi(c.PostForm("categoriaID"))
 		subcategoria := c.PostForm("subcategoria")
-		tallas := c.PostFormArray("tallas") // checkboxes: ["S","M","L"]
+		tallas := c.PostFormArray("tallas")
 
-		if err := productoPkg.Crear(nombre, descripcion, precio, imagen, categoriaID, subcategoria, tallas); err != nil {
+		// Imágenes: primera imagen (portada) + adicionales
+		imagenes := c.PostFormArray("imagenes")
+		portadaURL := c.PostForm("portada")
+		if portadaURL == "" {
+			for _, u := range imagenes {
+				if u != "" { portadaURL = u; break }
+			}
+		}
+
+		productoID, err := productoPkg.Crear(nombre, descripcion, precio, portadaURL, categoriaID, subcategoria, tallas)
+		if err != nil {
 			auth.SetFlash(c, "danger", "Error al crear producto: "+err.Error())
 		} else {
+			productoPkg.GuardarImagenes(productoID, imagenes, portadaURL)
+			var relIDs []int
+			for _, s := range c.PostFormArray("relacionados") {
+				rid, _ := strconv.Atoi(s)
+				if rid > 0 { relIDs = append(relIDs, rid) }
+			}
+			productoPkg.GuardarRelaciones(productoID, relIDs)
 			auth.SetFlash(c, "success", "¡Producto '"+nombre+"' creado correctamente!")
 		}
 		c.Redirect(http.StatusSeeOther, "/admin/productos")
@@ -306,6 +337,14 @@ func SetupRoutes(r *gin.Engine) {
 		data["producto"] = p
 		data["esNuevo"] = false
 		data["categorias"] = db.ListarCategorias()
+		data["todosProductos"] = productoPkg.Listar()
+		data["relacionadosIDs"] = productoPkg.ObtenerRelacionadosIDs(id)
+		// Si no hay imágenes en la galería, usar la portada existente
+		imgs := productoPkg.ObtenerImagenes(id)
+		if len(imgs) == 0 && p.Imagen != "" {
+			imgs = []string{p.Imagen}
+		}
+		data["imagenesGaleria"] = imgs
 		c.HTML(http.StatusOK, "admin_producto_form.html", data)
 	})
 
@@ -315,14 +354,28 @@ func SetupRoutes(r *gin.Engine) {
 		nombre := c.PostForm("nombre")
 		descripcion := c.PostForm("descripcion")
 		precio, _ := strconv.ParseFloat(c.PostForm("precio"), 64)
-		imagen := c.PostForm("imagen")
 		categoriaID, _ := strconv.Atoi(c.PostForm("categoriaID"))
 		subcategoria := c.PostForm("subcategoria")
 		tallas := c.PostFormArray("tallas")
 
-		if err := productoPkg.Actualizar(id, nombre, descripcion, precio, imagen, categoriaID, subcategoria, tallas); err != nil {
+		imagenes := c.PostFormArray("imagenes")
+		portadaURL := c.PostForm("portada")
+		if portadaURL == "" {
+			for _, u := range imagenes {
+				if u != "" { portadaURL = u; break }
+			}
+		}
+
+		if err := productoPkg.Actualizar(id, nombre, descripcion, precio, portadaURL, categoriaID, subcategoria, tallas); err != nil {
 			auth.SetFlash(c, "danger", "Error al actualizar: "+err.Error())
 		} else {
+			productoPkg.GuardarImagenes(id, imagenes, portadaURL)
+			var relIDs []int
+			for _, s := range c.PostFormArray("relacionados") {
+				rid, _ := strconv.Atoi(s)
+				if rid > 0 { relIDs = append(relIDs, rid) }
+			}
+			productoPkg.GuardarRelaciones(id, relIDs)
 			auth.SetFlash(c, "success", "Producto actualizado correctamente.")
 		}
 		c.Redirect(http.StatusSeeOther, "/admin/productos")
@@ -662,5 +715,37 @@ func SetupRoutes(r *gin.Engine) {
 		data["paginaActual"] = "pedidos"
 		data["pedidos"] = pedidos
 		c.HTML(http.StatusOK, "admin_pedidos.html", data)
+	})
+
+	// ── Subida de imágenes ───────────────────────────────────────────────────
+	// Recibe un archivo multipart, lo guarda en static/uploads/ y devuelve
+	// la URL pública como JSON. Lo usa el formulario de producto vía fetch().
+	admin.POST("/uploads/imagen", func(c *gin.Context) {
+		file, err := c.FormFile("archivo")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No se recibió ningún archivo."})
+			return
+		}
+
+		ext := strings.ToLower(filepath.Ext(file.Filename))
+		permitidos := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true}
+		if !permitidos[ext] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Formato no permitido. Usa JPG, PNG, WEBP o GIF."})
+			return
+		}
+
+		// Nombre único basado en timestamp para evitar colisiones
+		nombreArchivo := strconv.FormatInt(time.Now().UnixNano(), 10) + ext
+		destino := filepath.Join("static", "uploads", nombreArchivo)
+
+		os.MkdirAll(filepath.Join("static", "uploads"), 0755)
+
+		if err := c.SaveUploadedFile(file, destino); err != nil {
+			log.Printf("uploads/imagen ERROR: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar el archivo."})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"url": "/static/uploads/" + nombreArchivo})
 	})
 }
