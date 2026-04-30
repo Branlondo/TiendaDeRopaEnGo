@@ -79,6 +79,7 @@ func migrarPedidos() {
 		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS metodo_pago     VARCHAR(50)",
 		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS costo_envio     FLOAT DEFAULT 15000",
 		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS newsletter      BOOLEAN DEFAULT FALSE",
+		"ALTER TABLE pedidos ALTER COLUMN Fecha TYPE TIMESTAMP USING Fecha::timestamp",
 	}
 	for _, stmt := range migraciones {
 		if _, err := DB.Exec(stmt); err != nil {

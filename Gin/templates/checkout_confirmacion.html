@@ -201,7 +201,7 @@
         <div class="info-grid">
             <div class="info-box">
                 <div class="info-box-label">Total pagado</div>
-                <div class="info-box-val">COP ${{ printf "%.2f" .pedido.Total }}</div>
+                <div class="info-box-val">{{ formatCOP .pedido.Total }} COP</div>
             </div>
             <div class="info-box">
                 <div class="info-box-label">Método de pago</div>
@@ -250,7 +250,7 @@
         <div class="recibo-sub" style="margin-top:6px;">NIT: 900.123.456-7 · Bogotá, Colombia</div>
         <div class="recibo-sub">www.ropafashflash.com</div>
         <div style="margin-top:10px;font-size:13px;font-weight:700;">RECIBO DE COMPRA</div>
-        <div class="recibo-sub">Pedido #{{ .pedido.ID_Pedido }} &nbsp;|&nbsp; {{ .pedido.Fecha }}</div>
+        <div class="recibo-sub">Pedido #{{ .pedido.ID_Pedido }} &nbsp;|&nbsp; {{ formatFecha .pedido.Fecha }}</div>
     </div>
 
     <!-- Datos del cliente -->
@@ -278,10 +278,10 @@
         <div class="recibo-row">
             <span class="recibo-item-nombre">
                 {{ .Nombre }}{{ if .Talla }} ({{ .Talla }}){{ end }}
-                <br><span style="font-size:10px;color:#555;">${{ printf "%.2f" .PrecioUnitario }} c/u</span>
+                <br><span style="font-size:10px;color:#555;">{{ formatCOP .PrecioUnitario }} COP c/u</span>
             </span>
             <span class="recibo-item-qty">{{ .Cantidad }}</span>
-            <span class="recibo-item-precio">${{ printf "%.2f" .Subtotal }}</span>
+            <span class="recibo-item-precio">{{ formatCOP .Subtotal }} COP</span>
         </div>
         {{ end }}
         {{ else }}
@@ -294,15 +294,15 @@
         <div class="recibo-section-title">Resumen</div>
         <div class="recibo-row">
             <span>Subtotal productos</span>
-            <span>${{ printf "%.2f" .subtotalProductos }}</span>
+            <span>{{ formatCOP .subtotalProductos }} COP</span>
         </div>
         <div class="recibo-row">
             <span>Envío nacional</span>
-            <span>${{ printf "%.0f" .pedido.CostoEnvio }}</span>
+            <span>{{ formatCOP .pedido.CostoEnvio }} COP</span>
         </div>
         <div class="recibo-row total-row">
             <span>TOTAL</span>
-            <span>COP ${{ printf "%.2f" .pedido.Total }}</span>
+            <span>{{ formatCOP .pedido.Total }} COP</span>
         </div>
     </div>
 

@@ -56,7 +56,7 @@
                     <i class="bi-arrow-left me-1"></i> Volver a pedidos
                 </a>
                 <h3 class="fw-bold mb-0 mt-1">Pedido #{{ .pedido.ID_Pedido }}</h3>
-                <div class="text-muted small">{{ .pedido.Fecha }}</div>
+                <div class="text-muted small">{{ formatFecha .pedido.Fecha }}</div>
             </div>
             <div class="d-flex align-items-center gap-2">
                 {{ if eq .pedido.Estado "pendiente" }}
@@ -125,8 +125,8 @@
                                     {{ else }}—{{ end }}
                                 </td>
                                 <td class="text-center fw-bold">{{ .Cantidad }}</td>
-                                <td class="text-end" style="font-size:14px;">${{ printf "%.2f" .PrecioUnitario }}</td>
-                                <td class="text-end fw-bold" style="font-size:14px;">${{ printf "%.2f" .Subtotal }}</td>
+                                <td class="text-end" style="font-size:14px;">{{ formatCOP .PrecioUnitario }} COP</td>
+                                <td class="text-end fw-bold" style="font-size:14px;">{{ formatCOP .Subtotal }} COP</td>
                             </tr>
                             {{ end }}
                         </tbody>
@@ -137,15 +137,15 @@
                     <div style="max-width:300px;margin-left:auto;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
                         <div class="totales-row">
                             <span style="color:#64748b;">Subtotal productos</span>
-                            <span>${{ printf "%.2f" (fsub .pedido.Total .pedido.CostoEnvio) }}</span>
+                            <span>{{ formatCOP (fsub .pedido.Total .pedido.CostoEnvio) }} COP</span>
                         </div>
                         <div class="totales-row">
                             <span style="color:#64748b;">Envío Nacional</span>
-                            <span>${{ printf "%.0f" .pedido.CostoEnvio }}</span>
+                            <span>{{ formatCOP .pedido.CostoEnvio }} COP</span>
                         </div>
                         <div class="totales-row final">
                             <span>Total</span>
-                            <span>${{ printf "%.2f" .pedido.Total }}</span>
+                            <span>{{ formatCOP .pedido.Total }} COP</span>
                         </div>
                     </div>
                 </div>

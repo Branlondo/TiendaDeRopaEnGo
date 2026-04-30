@@ -300,7 +300,7 @@
                         <div class="shipping-desc">2 a 5 días hábiles ciudades principales · más de 7 días otros municipios</div>
                     </div>
                 </div>
-                <div class="shipping-price">$ {{ printf "%.0f" .costoEnvio }}</div>
+                <div class="shipping-price">{{ formatCOP .costoEnvio }} COP</div>
             </div>
         </div>
 
@@ -335,7 +335,7 @@
                     <div class="item-name">{{ .Nombre }}</div>
                     <div class="item-talla">Talla: {{ .Talla }}</div>
                 </div>
-                <div class="item-price">${{ printf "%.2f" .Total }}</div>
+                <div class="item-price">{{ formatCOP .Total }} COP</div>
             </div>
             {{ end }}
 
@@ -348,18 +348,15 @@
             <!-- Totales -->
             <div class="summary-line">
                 <span style="color:#475569;">Subtotal</span>
-                <span style="font-weight:600;">${{ printf "%.2f" .subtotal }}</span>
+                <span style="font-weight:600;">{{ formatCOP .subtotal }} COP</span>
             </div>
             <div class="summary-line">
                 <span style="color:#475569;">Envío <i class="bi bi-info-circle" style="font-size:11px;"></i></span>
-                <span style="font-weight:600;">${{ printf "%.0f" .costoEnvio }}</span>
+                <span style="font-weight:600;">{{ formatCOP .costoEnvio }} COP</span>
             </div>
             <div class="summary-line total">
                 <span>Total</span>
-                <span>
-                    <small style="font-size:11px;font-weight:400;color:#64748b;margin-right:4px;">COP</small>
-                    ${{ printf "%.2f" .total }}
-                </span>
+                <span>{{ formatCOP .total }} COP</span>
             </div>
 
         </div>

@@ -82,7 +82,7 @@
                                 <h5 class="fw-bolder mb-1">{{ .Nombre }}</h5>
                                 <span class="badge bg-secondary me-2">Talla: {{ .Talla }}</span>
                                 <p class="text-muted small mb-1 mt-1">{{ .Descripcion }}</p>
-                                <span class="fw-bold text-dark">${{ printf "%.2f" .Precio }} c/u</span>
+                                <span class="fw-bold text-dark">{{ formatCOP .Precio }} COP c/u</span>
                             </div>
 
                             <!-- Control de cantidad -->
@@ -116,7 +116,7 @@
 
                             <!-- Subtotal + eliminar -->
                             <div class="col-md-3 text-end">
-                                <p class="fw-bolder fs-5 mb-1">${{ printf "%.2f" .Total }}</p>
+                                <p class="fw-bolder fs-5 mb-1">{{ formatCOP .Total }} COP</p>
                                 <!-- Formulario POST para eliminar este item del carrito -->
                                 <form method="POST" action="/carrito/eliminar" class="d-inline">
                                     <input type="hidden" name="productoID" value="{{ .ProductoID }}">
@@ -141,7 +141,7 @@
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal:</span>
                                 <!-- .total viene calculado por Go en routes.go con carritoPkg.Total() -->
-                                <span>${{ printf "%.2f" .total }}</span>
+                                <span>{{ formatCOP .total }} COP</span>
                             </div>
                             <div class="d-flex justify-content-between mb-3">
                                 <span>Envío:</span>
@@ -150,7 +150,7 @@
                             <hr>
                             <div class="d-flex justify-content-between fw-bolder fs-5">
                                 <span>Total:</span>
-                                <span>${{ printf "%.2f" .total }}</span>
+                                <span>{{ formatCOP .total }} COP</span>
                             </div>
                             <a href="/checkout" class="btn btn-dark w-100 mt-3 py-2 fw-bold text-decoration-none d-block text-center">
                                 <i class="bi-credit-card me-1"></i> Proceder al pago
@@ -175,7 +175,7 @@
                             <div class="card-body p-4">
                                 <div class="text-center">
                                     <h5 class="fw-bolder">{{ .Nombre }}</h5>
-                                    ${{ .Precio }}
+                                    {{ formatCOP .Precio }} COP
                                 </div>
                             </div>
                             <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">

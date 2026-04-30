@@ -6,6 +6,8 @@
 //   - Categorías → Gin/db/db.go (ListarCategorias)
 package models
 
+import "time"
+
 // Categoria representa una sección de la tienda (Hombre / Mujer).
 // Los datos vienen de la tabla 'categorias' de PostgreSQL.
 type Categoria struct {
@@ -66,7 +68,7 @@ type Pedido struct {
 	ID_Pedido     int
 	UsuarioID     int
 	NombreCliente string // campo de JOIN con la tabla usuarios
-	Fecha         string
+	Fecha         time.Time
 	Total         float64
 	Estado        string // "pendiente" | "pagado" | "cancelado"
 	// Datos de envío

@@ -137,7 +137,7 @@
                                 <span class="badge bg-secondary">{{ .NombreCategoria }}</span>
                                 {{ end }}
                             </td>
-                            <td class="fw-bold">${{ printf "%.2f" .Precio }}</td>
+                            <td class="fw-bold">{{ formatCOP .Precio }} COP</td>
                             <td>
                                 <span class="text-muted small">{{ join .Tallas ", " }}</span>
                             </td>

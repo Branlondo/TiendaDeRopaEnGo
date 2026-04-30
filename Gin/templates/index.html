@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="" />
         <meta name="author" content="" />
-        <title>Ropa Fash Fashion - RFF</title>
+        <title>Ropa Flash Fashion - RFF</title>
         <!-- Favicon-->
         <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
         <!-- Bootstrap icons-->
@@ -25,26 +25,38 @@
             </div>
         </header>
         <!-- Section-->
-        <section class="py-5">
-            <div class="container d-flex justify-content-center align-items-center gap-4" style="height:70vh;">
-    
-            <!-- Sección Moda Mujer -->
-            <a href="/mujer" class="mx-2">
-                <img src="https://static.bershka.net/assets/public/1088/cd55/0947469e932e/83f23e093856/D_index_woman/D_index_woman.jpg?w=563&ts=20260305015702&f=auto" 
-                    alt="Moda Mujer" class="img-fluid" style="max-width:300px; cursor:pointer;">
-            </a>
+        <section class="py-0">
+            <div class="d-flex" style="height:120vh;overflow:hidden;">
 
-            <!-- Sección Moda Hombre -->
-            <a href="/hombre" class="mx-2">
-                <img src="https://static.bershka.net/assets/public/d6e4/2c6c/0f914e509277/a53acd4ba124/D_index_man/D_index_man.jpg?w=563&ts=20260305015702&f=auto" 
-                    alt="Moda Hombre" class="img-fluid" style="max-width:300px; cursor:pointer;">
-            </a>
+                <!-- Sección Moda Mujer -->
+                <a href="/mujer" class="position-relative text-decoration-none overflow-hidden" style="width:50%;">
+                    <img src="https://static.bershka.net/assets/public/1088/cd55/0947469e932e/83f23e093856/D_index_woman/D_index_woman.jpg?w=563&ts=20260305015702&f=auto"
+                         alt="Moda Mujer"
+                         style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .4s ease;">
+                    <div class="position-absolute bottom-0 start-0 w-100 px-5 pb-4"
+                         style="background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 100%);">
+                        <p class="text-white mb-1" style="font-size:13px;letter-spacing:3px;font-weight:600;">IR A MODA</p>
+                        <p class="text-white fw-bolder m-0" style="font-size:clamp(2rem,4vw,3.2rem);letter-spacing:2px;line-height:1;">ROPA PARA MUJER</p>
+                    </div>
+                </a>
 
-  </div>
-</section>
+                <!-- Sección Moda Hombre -->
+                <a href="/hombre" class="position-relative text-decoration-none overflow-hidden" style="width:50%;">
+                    <img src="https://static.bershka.net/assets/public/d6e4/2c6c/0f914e509277/a53acd4ba124/D_index_man/D_index_man.jpg?w=563&ts=20260305015702&f=auto"
+                         alt="Moda Hombre"
+                         style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .4s ease;">
+                    <div class="position-absolute bottom-0 start-0 w-100 px-5 pb-4"
+                         style="background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 100%);">
+                        <p class="text-white mb-1" style="font-size:13px;letter-spacing:3px;font-weight:600;">IR A MODA</p>
+                        <p class="text-white fw-bolder m-0" style="font-size:clamp(2rem,4vw,3.2rem);letter-spacing:2px;line-height:1;">ROPA PARA HOMBRE</p>
+                    </div>
+                </a>
 
-
+            </div>
         </section>
+        <style>
+            section a:hover img { transform: scale(1.03); }
+        </style>
         <!-- Footer-->
         <footer class="py-5 bg-dark">
             <div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>

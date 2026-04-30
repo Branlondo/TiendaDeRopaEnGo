@@ -91,6 +91,21 @@ func SetupRoutes(r *gin.Engine) {
 			r[0] = unicode.ToUpper(r[0])
 			return strings.ToUpper(string(r))
 		},
+		"formatFecha": func(t time.Time) string {
+			return t.Format("02/01/2006 15:04")
+		},
+		"formatCOP": func(v float64) string {
+			n := int64(v)
+			s := strconv.FormatInt(n, 10)
+			result := ""
+			for i, c := range s {
+				if i > 0 && (len(s)-i)%3 == 0 {
+					result += "."
+				}
+				result += string(c)
+			}
+			return "$" + result
+		},
 	})
 
 	r.Static("/static", "./static")
@@ -411,7 +426,7 @@ func SetupRoutes(r *gin.Engine) {
 				 $12, $13, $14, $15, $16)
 			RETURNING ID_Pedido`,
 			usuarioID,
-			time.Now().Format("2006-01-02"),
+			time.Now(),
 			total,
 			c.PostForm("email"),
 			c.PostForm("nombre"),
@@ -523,7 +538,7 @@ func SetupRoutes(r *gin.Engine) {
 			Departamento  string
 			CodigoPostal  string
 			MetodoPago    string
-			Fecha         string
+			Fecha         time.Time
 			Total         float64
 			CostoEnvio    float64
 			Estado        string
@@ -612,7 +627,7 @@ func SetupRoutes(r *gin.Engine) {
 		type FilaPedido struct {
 			ID_Pedido     int
 			NombreCliente string
-			Fecha         string
+			Fecha         time.Time
 			Total         float64
 			Estado        string
 			EmailContacto string

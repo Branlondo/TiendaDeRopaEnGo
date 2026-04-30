@@ -88,8 +88,8 @@
                                 <span class="text-muted">—</span>
                                 {{ end }}
                             </td>
-                            <td class="text-muted" style="font-size:13px;">{{ .Fecha }}</td>
-                            <td class="fw-bold">${{ printf "%.2f" .Total }}</td>
+                            <td class="text-muted" style="font-size:13px;">{{ formatFecha .Fecha }}</td>
+                            <td class="fw-bold">{{ formatCOP .Total }} COP</td>
                             <td>
                                 {{ if eq .Estado "pendiente" }}
                                 <span class="badge-estado badge bg-warning text-dark">⏳ Pendiente</span>

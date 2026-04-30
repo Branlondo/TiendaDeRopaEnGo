@@ -69,7 +69,7 @@
                         <div class="small mb-1">SKU: RFF-{{ .producto.ID }}</div>
                         <h1 class="display-5 fw-bolder">{{ .producto.Nombre }}</h1>
                         <div class="fs-5 mb-3">
-                            <span>${{ .producto.Precio }}</span>
+                            <span>{{ formatCOP .producto.Precio }} COP</span>
                         </div>
                         <p class="lead">{{ .producto.Descripcion }}</p>
 

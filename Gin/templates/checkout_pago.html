@@ -269,7 +269,7 @@
                     <div style="font-size:13px;font-weight:600;">{{ .Nombre }}</div>
                     <div style="font-size:11px;color:#64748b;">Talla: {{ .Talla }}</div>
                 </div>
-                <div style="font-size:13px;font-weight:700;white-space:nowrap;">${{ printf "%.2f" .Total }}</div>
+                <div style="font-size:13px;font-weight:700;white-space:nowrap;">{{ formatCOP .Total }} COP</div>
             </div>
             {{ end }}
 
@@ -277,18 +277,15 @@
 
             <div class="summary-line">
                 <span style="color:#475569;">Subtotal</span>
-                <span style="font-weight:600;">${{ printf "%.2f" .subtotal }}</span>
+                <span style="font-weight:600;">{{ formatCOP .subtotal }} COP</span>
             </div>
             <div class="summary-line">
                 <span style="color:#475569;">Envío Nacional</span>
-                <span style="font-weight:600;">${{ printf "%.0f" .costoEnvio }}</span>
+                <span style="font-weight:600;">{{ formatCOP .costoEnvio }} COP</span>
             </div>
             <div class="summary-line total">
                 <span>Total</span>
-                <span>
-                    <small style="font-size:11px;font-weight:400;color:#64748b;margin-right:4px;">COP</small>
-                    ${{ printf "%.2f" .total }}
-                </span>
+                <span>{{ formatCOP .total }} COP</span>
             </div>
 
             <!-- Mini resumen del método seleccionado -->
