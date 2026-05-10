@@ -180,6 +180,11 @@
                     <i class="bi-speedometer2 me-2"></i>PANEL ADMIN
                 </a>
                 {{ end }}
+                {{ if eq .usuario.Rol "cliente" }}
+                <a href="/mis-pedidos" class="btn btn-outline-dark w-100 py-2 fw-bold">
+                    <i class="bi-bag me-2"></i>MIS PEDIDOS
+                </a>
+                {{ end }}
                 <a href="/auth/logout" class="btn btn-outline-danger w-100 py-2 fw-bold">
                     <i class="bi-box-arrow-right me-2"></i>CERRAR SESIÓN
                 </a>

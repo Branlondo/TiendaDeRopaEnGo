@@ -80,6 +80,13 @@ func migrarPedidos() {
 		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS costo_envio     FLOAT DEFAULT 15000",
 		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS newsletter      BOOLEAN DEFAULT FALSE",
 		"ALTER TABLE pedidos ALTER COLUMN Fecha TYPE TIMESTAMP USING Fecha::timestamp",
+		// Columnas del sistema de seguimiento de envío
+		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS numero_guia   VARCHAR(100)",
+		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS fecha_envio   TIMESTAMP",
+		"ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS fecha_entrega TIMESTAMP",
+		// Ampliar CHECK para admitir los nuevos estados del flujo de envío
+		"ALTER TABLE pedidos DROP CONSTRAINT IF EXISTS pedidos_estado_check",
+		"ALTER TABLE pedidos ADD CONSTRAINT pedidos_estado_check CHECK (Estado IN ('pendiente','pagado','enviado','entregado','cancelado'))",
 	}
 	for _, stmt := range migraciones {
 		if _, err := DB.Exec(stmt); err != nil {

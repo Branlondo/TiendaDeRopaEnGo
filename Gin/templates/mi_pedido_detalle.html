@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Pedido #{{ .pedido.ID_Pedido }} — RFF</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <style>
+        body { background: #f8fafc; }
+        .info-card { background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:24px; margin-bottom:20px; }
+        .info-card-title {
+            font-size:13px; font-weight:700; text-transform:uppercase;
+            letter-spacing:1px; color:#94a3b8; margin-bottom:16px;
+            padding-bottom:10px; border-bottom:1px solid #f1f5f9;
+        }
+        .totales-row { display:flex; justify-content:space-between; font-size:14px; padding:8px 0; }
+        .totales-row.final { font-size:17px; font-weight:800; padding-top:14px;
+                             border-top:2px solid #1e293b; margin-top:6px; }
+        .producto-img { width:52px; height:52px; object-fit:cover; border-radius:8px;
+                        border:1px solid #e2e8f0; background:#f8fafc; }
+        .talla-badge { background:#f1f5f9; border-radius:6px; padding:2px 8px;
+                       font-size:12px; color:#475569; font-weight:600; }
+
+        /* Timeline */
+        .timeline { display:flex; align-items:flex-start; gap:0; }
+        .tl-step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; }
+        .tl-step::after {
+            content:''; position:absolute; top:14px; left:50%; width:100%;
+            height:2px; background:#e2e8f0; z-index:0;
+        }
+        .tl-step:last-child::after { display:none; }
+        .tl-dot {
+            width:28px; height:28px; border-radius:50%; border:2px solid #e2e8f0;
+            background:#fff; display:flex; align-items:center; justify-content:center;
+            font-size:12px; position:relative; z-index:1; flex-shrink:0;
+        }
+        .tl-dot.done   { background:#16a34a; border-color:#16a34a; color:#fff; }
+        .tl-dot.active { background:#0ea5e9; border-color:#0ea5e9; color:#fff; }
+        .tl-dot.cancel { background:#dc2626; border-color:#dc2626; color:#fff; }
+        .tl-label { font-size:10px; font-weight:600; color:#94a3b8; margin-top:6px;
+                    text-align:center; text-transform:uppercase; letter-spacing:.5px; }
+        .tl-date  { font-size:10px; color:#64748b; margin-top:2px; text-align:center; }
+
+        /* Banner de guía */
+        .guia-banner {
+            background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px;
+            padding:16px 20px; display:flex; align-items:center; gap:14px;
+        }
+        .guia-banner i { font-size:2rem; color:#0ea5e9; flex-shrink:0; }
+        .guia-num { font-size:18px; font-weight:800; color:#0369a1; letter-spacing:1px; }
+        .guia-label { font-size:12px; color:#64748b; margin-bottom:2px; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container px-4 px-lg-5">
+            <a class="btn btn-light d-flex align-items-center" href="/">
+                <img src="/static/assets/Unilogo.ico" alt="Logo" style="height:24px;width:auto;margin-right:8px;">
+                RFF
+            </a>
+            <div class="d-flex gap-2 ms-auto">
+                <button class="btn btn-outline-dark" type="button" onclick="window.location.href='/carrito'">
+                    <i class="bi-cart-fill me-1"></i>Cart
+                    <span class="badge bg-dark text-white ms-1 rounded-pill">{{ .cartCount }}</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    {{ if .flashMsg }}
+    <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show m-0" role="alert" style="border-radius:0;">
+        {{ .flashMsg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {{ end }}
+
+    <div class="container px-4 px-lg-5 py-5">
+
+        <a href="/mis-pedidos" class="text-muted text-decoration-none d-block mb-3" style="font-size:13px;">
+            <i class="bi-arrow-left me-1"></i> Volver a mis pedidos
+        </a>
+
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <div>
+                <h3 class="fw-bold mb-0">Pedido #{{ .pedido.ID_Pedido }}</h3>
+                <div class="text-muted small">Realizado el {{ formatFecha .pedido.Fecha }}</div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="info-card mb-4">
+            <div class="info-card-title"><i class="bi-map me-2"></i>Estado del pedido</div>
+            <div class="timeline mb-2">
+                <div class="tl-step">
+                    <div class="tl-dot {{ if or (eq .pedido.Estado "pagado") (eq .pedido.Estado "enviado") (eq .pedido.Estado "entregado") }}done{{ else if eq .pedido.Estado "pendiente" }}active{{ else if eq .pedido.Estado "cancelado" }}cancel{{ end }}">
+                        {{ if or (eq .pedido.Estado "pagado") (eq .pedido.Estado "enviado") (eq .pedido.Estado "entregado") }}✓{{ else if eq .pedido.Estado "cancelado" }}✗{{ else }}1{{ end }}
+                    </div>
+                    <div class="tl-label">Recibido</div>
+                    <div class="tl-date">{{ formatFecha .pedido.Fecha }}</div>
+                </div>
+                <div class="tl-step">
+                    <div class="tl-dot {{ if or (eq .pedido.Estado "enviado") (eq .pedido.Estado "entregado") }}done{{ else if eq .pedido.Estado "pagado" }}active{{ end }}">
+                        {{ if or (eq .pedido.Estado "enviado") (eq .pedido.Estado "entregado") }}✓{{ else }}2{{ end }}
+                    </div>
+                    <div class="tl-label">Confirmado</div>
+                </div>
+                <div class="tl-step">
+                    <div class="tl-dot {{ if eq .pedido.Estado "entregado" }}done{{ else if eq .pedido.Estado "enviado" }}active{{ end }}">
+                        {{ if eq .pedido.Estado "entregado" }}✓{{ else }}3{{ end }}
+                    </div>
+                    <div class="tl-label">En camino</div>
+                    {{ if not .pedido.FechaEnvio.IsZero }}<div class="tl-date">{{ formatFecha .pedido.FechaEnvio }}</div>{{ end }}
+                </div>
+                <div class="tl-step">
+                    <div class="tl-dot {{ if eq .pedido.Estado "entregado" }}done{{ end }}">
+                        {{ if eq .pedido.Estado "entregado" }}✓{{ else }}4{{ end }}
+                    </div>
+                    <div class="tl-label">Entregado</div>
+                    {{ if not .pedido.FechaEntrega.IsZero }}<div class="tl-date">{{ formatFecha .pedido.FechaEntrega }}</div>{{ end }}
+                </div>
+            </div>
+
+            <!-- Número de guía si está disponible -->
+            {{ if .pedido.NumeroGuia }}
+            <div class="guia-banner mt-3">
+                <i class="bi-truck"></i>
+                <div>
+                    <div class="guia-label">Número de guía / tracking</div>
+                    <div class="guia-num">{{ .pedido.NumeroGuia }}</div>
+                </div>
+            </div>
+            {{ end }}
+
+            <!-- Botón confirmar entrega si está "enviado" -->
+            {{ if eq .pedido.Estado "enviado" }}
+            <div class="mt-3 p-3 bg-light rounded d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <div class="fw-semibold" style="font-size:14px;">¿Ya recibiste tu pedido?</div>
+                    <div class="text-muted" style="font-size:12px;">Confirma la recepción para cerrar el pedido.</div>
+                </div>
+                <form method="POST" action="/pedidos/{{ .pedido.ID_Pedido }}/confirmar-entrega"
+                      onsubmit="return confirm('¿Confirmas que recibiste el pedido?')">
+                    <button class="btn btn-success fw-bold">
+                        <i class="bi-box-seam me-1"></i>Confirmar recepción
+                    </button>
+                </form>
+            </div>
+            {{ end }}
+        </div>
+
+        <div class="row g-4">
+            <!-- Productos -->
+            <div class="col-lg-8">
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-bag me-2"></i>Productos</div>
+                    {{ range .items }}
+                    <div class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom:1px solid #f1f5f9;">
+                        <img src="{{ .Imagen }}" alt="{{ .Nombre }}" class="producto-img"
+                             onerror="this.src='/static/assets/camisa.jpg'" />
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="font-size:14px;">{{ .Nombre }}</div>
+                            {{ if .Talla }}<span class="talla-badge">{{ .Talla }}</span>{{ end }}
+                        </div>
+                        <div class="text-end">
+                            <div class="text-muted" style="font-size:12px;">x{{ .Cantidad }}</div>
+                            <div class="fw-bold" style="font-size:14px;">{{ formatCOP .Subtotal }} COP</div>
+                        </div>
+                    </div>
+                    {{ end }}
+
+                    <div style="max-width:280px;margin-left:auto;margin-top:8px;">
+                        <div class="totales-row">
+                            <span style="color:#64748b;">Subtotal</span>
+                            <span>{{ formatCOP (fsub .pedido.Total .pedido.CostoEnvio) }} COP</span>
+                        </div>
+                        <div class="totales-row">
+                            <span style="color:#64748b;">Envío</span>
+                            <span>{{ formatCOP .pedido.CostoEnvio }} COP</span>
+                        </div>
+                        <div class="totales-row final">
+                            <span>Total</span>
+                            <span>{{ formatCOP .pedido.Total }} COP</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dirección y método de pago -->
+            <div class="col-lg-4">
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-geo-alt me-2"></i>Dirección de entrega</div>
+                    <p class="mb-1" style="font-size:14px;">{{ .pedido.NombreEnvio }} {{ .pedido.ApellidoEnvio }}</p>
+                    <p class="mb-1 text-muted" style="font-size:13px;">{{ .pedido.Direccion }}</p>
+                    {{ if .pedido.Direccion2 }}<p class="mb-1 text-muted" style="font-size:13px;">{{ .pedido.Direccion2 }}</p>{{ end }}
+                    <p class="mb-0 text-muted" style="font-size:13px;">{{ .pedido.Ciudad }}, {{ .pedido.Departamento }}</p>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title"><i class="bi-credit-card me-2"></i>Método de pago</div>
+                    <p class="mb-0 fw-semibold" style="font-size:14px;text-transform:capitalize;">
+                        {{ if .pedido.MetodoPago }}{{ .pedido.MetodoPago }}{{ else }}—{{ end }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="py-4 bg-dark mt-3">
+        <div class="container"><p class="m-0 text-center text-white">Copyright &copy; RFF 2026</p></div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

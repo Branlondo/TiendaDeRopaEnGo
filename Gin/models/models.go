@@ -85,4 +85,8 @@ type Pedido struct {
 	Telefono      string
 	MetodoPago    string
 	CostoEnvio    float64
+	// Seguimiento de envío
+	NumeroGuia   string
+	FechaEnvio   time.Time
+	FechaEntrega time.Time
 }

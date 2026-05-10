@@ -92,11 +92,15 @@
                             <td class="fw-bold">{{ formatCOP .Total }} COP</td>
                             <td>
                                 {{ if eq .Estado "pendiente" }}
-                                <span class="badge-estado badge bg-warning text-dark">⏳ Pendiente</span>
+                                <span class="badge-estado badge bg-warning text-dark">Pendiente</span>
                                 {{ else if eq .Estado "pagado" }}
-                                <span class="badge-estado badge bg-success">✅ Pagado</span>
+                                <span class="badge-estado badge bg-success">Pagado</span>
+                                {{ else if eq .Estado "enviado" }}
+                                <span class="badge-estado badge bg-info text-dark">Enviado</span>
+                                {{ else if eq .Estado "entregado" }}
+                                <span class="badge-estado badge bg-primary">Entregado</span>
                                 {{ else if eq .Estado "cancelado" }}
-                                <span class="badge-estado badge bg-danger">❌ Cancelado</span>
+                                <span class="badge-estado badge bg-danger">Cancelado</span>
                                 {{ else }}
                                 <span class="badge-estado badge bg-secondary">{{ .Estado }}</span>
                                 {{ end }}

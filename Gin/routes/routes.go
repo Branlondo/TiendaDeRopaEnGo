@@ -595,6 +595,9 @@ func SetupRoutes(r *gin.Engine) {
 			Total         float64
 			CostoEnvio    float64
 			Estado        string
+			NumeroGuia    string
+			FechaEnvio    time.Time
+			FechaEntrega  time.Time
 		}
 		var p DetallePedido
 		err = db.DB.QueryRow(`
@@ -605,7 +608,10 @@ func SetupRoutes(r *gin.Engine) {
 			       COALESCE(p.direccion2,''), COALESCE(p.ciudad,''),
 			       COALESCE(p.departamento,''), COALESCE(p.codigo_postal,''),
 			       COALESCE(p.metodo_pago,''), p.Fecha, p.Total,
-			       COALESCE(p.costo_envio,0), p.Estado
+			       COALESCE(p.costo_envio,0), p.Estado,
+			       COALESCE(p.numero_guia,''),
+			       COALESCE(p.fecha_envio,'0001-01-01'::timestamp),
+			       COALESCE(p.fecha_entrega,'0001-01-01'::timestamp)
 			FROM pedidos p
 			LEFT JOIN usuarios u ON p.UsuarioID = u.ID_Usuario
 			WHERE p.ID_Pedido = $1`, pedidoID).
@@ -614,7 +620,8 @@ func SetupRoutes(r *gin.Engine) {
 				&p.Telefono, &p.Direccion, &p.Direccion2,
 				&p.Ciudad, &p.Departamento, &p.CodigoPostal,
 				&p.MetodoPago, &p.Fecha, &p.Total,
-				&p.CostoEnvio, &p.Estado)
+				&p.CostoEnvio, &p.Estado,
+				&p.NumeroGuia, &p.FechaEnvio, &p.FechaEntrega)
 		if err != nil {
 			auth.SetFlash(c, "danger", "Pedido no encontrado.")
 			c.Redirect(http.StatusSeeOther, "/admin/pedidos")
@@ -715,6 +722,159 @@ func SetupRoutes(r *gin.Engine) {
 		data["paginaActual"] = "pedidos"
 		data["pedidos"] = pedidos
 		c.HTML(http.StatusOK, "admin_pedidos.html", data)
+	})
+
+	// ── API pública: municipios por departamento ─────────────────────────────
+	// Devuelve JSON con la lista de municipios del departamento solicitado.
+	// Lo consume el select dinámico del checkout vía fetch().
+	r.GET("/api/municipios/:departamento", func(c *gin.Context) {
+		depto := c.Param("departamento")
+		munis, ok := municipiosColombia[depto]
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{"municipios": []string{}})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"municipios": munis})
+	})
+
+	// ── Mis pedidos (cliente autenticado) ────────────────────────────────────
+
+	r.GET("/mis-pedidos", func(c *gin.Context) {
+		u := auth.UsuarioActual(c)
+		if u == nil {
+			auth.SetFlash(c, "warning", "Debes iniciar sesión para ver tus pedidos.")
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+		type FilaMisPedidos struct {
+			ID_Pedido int
+			Fecha     time.Time
+			Total     float64
+			Estado    string
+			Ciudad    string
+		}
+		rows, err := db.DB.Query(`
+			SELECT ID_Pedido, Fecha, Total, Estado, COALESCE(ciudad,'')
+			FROM pedidos WHERE UsuarioID = $1 ORDER BY ID_Pedido DESC`, u.ID_Usuario)
+		var pedidos []FilaMisPedidos
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var f FilaMisPedidos
+				rows.Scan(&f.ID_Pedido, &f.Fecha, &f.Total, &f.Estado, &f.Ciudad)
+				pedidos = append(pedidos, f)
+			}
+		}
+		data := datosBase(c)
+		data["pedidos"] = pedidos
+		c.HTML(http.StatusOK, "mis_pedidos.html", data)
+	})
+
+	r.GET("/mis-pedidos/:id", func(c *gin.Context) {
+		u := auth.UsuarioActual(c)
+		if u == nil {
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+		pedidoID, _ := strconv.Atoi(c.Param("id"))
+
+		var p models.Pedido
+		err := db.DB.QueryRow(`
+			SELECT ID_Pedido, COALESCE(nombre_envio,''), COALESCE(apellido_envio,''),
+			       COALESCE(email_contacto,''), Total, Estado, COALESCE(metodo_pago,''),
+			       COALESCE(costo_envio,0), COALESCE(direccion,''), COALESCE(ciudad,''),
+			       COALESCE(departamento,''), Fecha,
+			       COALESCE(numero_guia,''),
+			       COALESCE(fecha_envio, '0001-01-01'::timestamp),
+			       COALESCE(fecha_entrega,'0001-01-01'::timestamp)
+			FROM pedidos WHERE ID_Pedido = $1 AND UsuarioID = $2`, pedidoID, u.ID_Usuario).
+			Scan(&p.ID_Pedido, &p.NombreEnvio, &p.ApellidoEnvio,
+				&p.EmailContacto, &p.Total, &p.Estado, &p.MetodoPago,
+				&p.CostoEnvio, &p.Direccion, &p.Ciudad, &p.Departamento, &p.Fecha,
+				&p.NumeroGuia, &p.FechaEnvio, &p.FechaEntrega)
+		if err != nil {
+			auth.SetFlash(c, "danger", "Pedido no encontrado.")
+			c.Redirect(http.StatusSeeOther, "/mis-pedidos")
+			return
+		}
+
+		type ItemMiPedido struct {
+			Nombre         string
+			Talla          string
+			Cantidad       int
+			PrecioUnitario float64
+			Subtotal       float64
+			Imagen         string
+		}
+		rows, _ := db.DB.Query(`
+			SELECT pi.Nombre, COALESCE(pi.Talla,''), pi.Cantidad,
+			       pi.PrecioUnitario, pi.Subtotal, COALESCE(pr.ImagenURL,'')
+			FROM pedido_items pi
+			LEFT JOIN productos pr ON pi.ProductoID = pr.ID_Producto
+			WHERE pi.PedidoID = $1 ORDER BY pi.ID_Item`, pedidoID)
+		var items []ItemMiPedido
+		if rows != nil {
+			defer rows.Close()
+			for rows.Next() {
+				var it ItemMiPedido
+				rows.Scan(&it.Nombre, &it.Talla, &it.Cantidad,
+					&it.PrecioUnitario, &it.Subtotal, &it.Imagen)
+				items = append(items, it)
+			}
+		}
+
+		data := datosBase(c)
+		data["pedido"] = p
+		data["items"] = items
+		c.HTML(http.StatusOK, "mi_pedido_detalle.html", data)
+	})
+
+	// El cliente confirma que recibió el pedido
+	r.POST("/pedidos/:id/confirmar-entrega", func(c *gin.Context) {
+		u := auth.UsuarioActual(c)
+		if u == nil {
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+		pedidoID, _ := strconv.Atoi(c.Param("id"))
+		// Solo permite confirmar si el pedido pertenece al usuario y está "enviado"
+		_, err := db.DB.Exec(`
+			UPDATE pedidos SET Estado = 'entregado', fecha_entrega = $1
+			WHERE ID_Pedido = $2 AND UsuarioID = $3 AND Estado = 'enviado'`,
+			time.Now(), pedidoID, u.ID_Usuario)
+		if err != nil {
+			auth.SetFlash(c, "danger", "No se pudo confirmar la entrega.")
+		} else {
+			auth.SetFlash(c, "success", "¡Gracias! Has confirmado la recepción del pedido.")
+		}
+		c.Redirect(http.StatusSeeOther, "/mis-pedidos/"+strconv.Itoa(pedidoID))
+	})
+
+	// ── Cambio de estado del pedido (admin) ──────────────────────────────────
+
+	admin.POST("/pedidos/:id/marcar-pagado", func(c *gin.Context) {
+		pedidoID, _ := strconv.Atoi(c.Param("id"))
+		db.DB.Exec(`UPDATE pedidos SET Estado = 'pagado' WHERE ID_Pedido = $1 AND Estado = 'pendiente'`, pedidoID)
+		auth.SetFlash(c, "success", "Pedido #"+strconv.Itoa(pedidoID)+" marcado como pagado.")
+		c.Redirect(http.StatusSeeOther, "/admin/pedidos/"+strconv.Itoa(pedidoID))
+	})
+
+	admin.POST("/pedidos/:id/marcar-enviado", func(c *gin.Context) {
+		pedidoID, _ := strconv.Atoi(c.Param("id"))
+		guia := strings.TrimSpace(c.PostForm("numero_guia"))
+		db.DB.Exec(`
+			UPDATE pedidos SET Estado = 'enviado', numero_guia = $1, fecha_envio = $2
+			WHERE ID_Pedido = $3 AND Estado = 'pagado'`,
+			guia, time.Now(), pedidoID)
+		auth.SetFlash(c, "success", "Pedido #"+strconv.Itoa(pedidoID)+" marcado como enviado.")
+		c.Redirect(http.StatusSeeOther, "/admin/pedidos/"+strconv.Itoa(pedidoID))
+	})
+
+	admin.POST("/pedidos/:id/marcar-cancelado", func(c *gin.Context) {
+		pedidoID, _ := strconv.Atoi(c.Param("id"))
+		db.DB.Exec(`UPDATE pedidos SET Estado = 'cancelado' WHERE ID_Pedido = $1 AND Estado NOT IN ('entregado','cancelado')`, pedidoID)
+		auth.SetFlash(c, "warning", "Pedido #"+strconv.Itoa(pedidoID)+" cancelado.")
+		c.Redirect(http.StatusSeeOther, "/admin/pedidos/"+strconv.Itoa(pedidoID))
 	})
 
 	// ── Subida de imágenes ───────────────────────────────────────────────────
