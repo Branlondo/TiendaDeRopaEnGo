@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>{{ .categoriaActual }} — Ropa Flash Fashion</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <style>
+        /* ── Mega-menú ─────────────────────────────────────────────────── */
+        .nav-mega { position:relative; }
+        .mega-menu {
+            display:none; position:absolute; top:100%; left:0;
+            background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+            box-shadow:0 8px 24px rgba(0,0,0,.1); min-width:200px;
+            z-index:1000; padding:8px 0;
+        }
+        .nav-mega:hover .mega-menu,
+        .nav-mega:focus-within .mega-menu { display:block; }
+        .mega-menu a {
+            display:block; padding:8px 20px; font-size:13px;
+            color:#1e293b; text-decoration:none; font-weight:500;
+        }
+        .mega-menu a:hover { background:#f8fafc; color:#000; }
+        .mega-menu .divider { border-top:1px solid #e2e8f0; margin:4px 0; }
+
+        /* ── Tarjetas de subcategoría ──────────────────────────────────── */
+        .subcat-card {
+            position:relative; overflow:hidden; border-radius:4px;
+            cursor:pointer; display:block; text-decoration:none; color:#fff;
+            aspect-ratio: 2/3; background:#e2e8f0;
+        }
+        .subcat-card img {
+            width:100%; height:100%; object-fit:cover; object-position:top;
+            transition:transform .5s ease; display:block;
+        }
+        .subcat-card:hover img { transform:scale(1.05); }
+        .subcat-card .overlay {
+            position:absolute; bottom:0; left:0; width:100%;
+            background:linear-gradient(to top, rgba(0,0,0,.65) 0%, transparent 100%);
+            padding:24px 14px 16px;
+        }
+        .subcat-card .nombre {
+            font-size:15px; font-weight:700; letter-spacing:.5px;
+            text-transform:uppercase; line-height:1.2;
+        }
+        .subcat-card .total {
+            font-size:11px; opacity:.8; margin-top:2px;
+        }
+        .subcat-card.empty { opacity:.5; pointer-events:none; }
+        .producto-item:hover img { transform: scale(1.04); }
+    </style>
+</head>
+<body>
+    <!-- Navbar con mega-menú -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container px-4 px-lg-5">
+            <a class="btn btn-light d-flex align-items-center" href="/">
+                <img src="/static/assets/Unilogo.ico" alt="Logo" style="height:24px;width:auto;margin-right:8px;">
+                RFF
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <!-- MUJER con mega-menú -->
+                    <li class="nav-item nav-mega">
+                        <a class="nav-link {{ if eq .categoriaActual "Mujer" }}active fw-bold{{ end }}" href="/mujer">
+                            MUJER <i class="bi-chevron-down" style="font-size:10px;"></i>
+                        </a>
+                        <div class="mega-menu">
+                            <a href="/mujer"><strong>Ver todo</strong></a>
+                            <div class="divider"></div>
+                            {{ range .navSubcatsM }}{{ if gt .Total 0 }}
+                            <a href="/mujer/{{ .ID }}">{{ .Nombre }}</a>
+                            {{ end }}{{ end }}
+                        </div>
+                    </li>
+                    <!-- HOMBRE con mega-menú -->
+                    <li class="nav-item nav-mega">
+                        <a class="nav-link {{ if eq .categoriaActual "Hombre" }}active fw-bold{{ end }}" href="/hombre">
+                            HOMBRE <i class="bi-chevron-down" style="font-size:10px;"></i>
+                        </a>
+                        <div class="mega-menu">
+                            <a href="/hombre"><strong>Ver todo</strong></a>
+                            <div class="divider"></div>
+                            {{ range .navSubcatsH }}{{ if gt .Total 0 }}
+                            <a href="/hombre/{{ .ID }}">{{ .Nombre }}</a>
+                            {{ end }}{{ end }}
+                        </div>
+                    </li>
+                </ul>
+                <div class="d-flex gap-2">
+                    {{ if .usuario }}
+                    <button class="btn btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#loginSidebar">
+                        <i class="bi-person-fill me-1"></i>{{ .usuario.Nombre }}
+                    </button>
+                    {{ else }}
+                    <button class="btn btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#loginSidebar">
+                        <i class="bi-person me-1"></i>Iniciar sesión
+                    </button>
+                    {{ end }}
+                    <button class="btn btn-outline-dark" type="button" onclick="window.location.href='/carrito'">
+                        <i class="bi-cart-fill me-1"></i>Cart
+                        <span class="badge bg-dark text-white ms-1 rounded-pill">{{ .cartCount }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    {{ if .flashMsg }}
+    <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show m-0" role="alert" style="border-radius:0;">
+        {{ .flashMsg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {{ end }}
+
+    <!-- Título de sección -->
+    <div class="container-fluid px-4 px-lg-5 py-4">
+        <h2 class="fw-bold mb-0" style="font-size:1.4rem;letter-spacing:2px;text-transform:uppercase;">
+            {{ .categoriaActual }}
+        </h2>
+        <p class="text-muted small mb-0">Selecciona una categoría para ver los productos</p>
+    </div>
+
+    <!-- Grid de subcategorías -->
+    <section class="pb-5">
+        <div class="container-fluid px-3 px-lg-5">
+            {{ $cat := .categoriaActual }}
+            {{ $catLow := toLower .categoriaActual }}
+            {{ $subcats := .subcategorias }}
+
+            {{ if not $subcats }}
+            <!-- Sin subcategorías: mostrar mensaje -->
+            <div class="text-center py-5">
+                <i class="bi-grid" style="font-size:3rem;color:#cbd5e1;display:block;margin-bottom:1rem;"></i>
+                <h5 class="fw-bold text-muted">Aún no hay categorías en {{ $cat }}</h5>
+                <p class="text-muted">El administrador puede crearlas desde el panel.</p>
+            </div>
+            {{ else }}
+            <div class="row g-2 row-cols-2 row-cols-md-3 row-cols-xl-4">
+                {{ range $subcats }}
+                {{ if gt .Total 0 }}
+                <div class="col">
+                    <a href="/{{ $catLow }}/{{ .ID }}" class="subcat-card d-block">
+                        {{ if .Portada }}
+                        <img src="{{ .Portada }}" alt="{{ .Nombre }}" />
+                        {{ else }}
+                        <div style="width:100%;height:100%;background:#e2e8f0;"></div>
+                        {{ end }}
+                        <div class="overlay">
+                            <div class="nombre">{{ .Nombre }}</div>
+                            <div class="total">{{ .Total }} producto{{ if gt .Total 1 }}s{{ end }}</div>
+                        </div>
+                    </a>
+                </div>
+                {{ end }}
+                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+    </section>
+
+    <footer class="py-5 bg-dark">
+        <div class="container"><p class="m-0 text-center text-white">Copyright &copy; RFF 2026</p></div>
+    </footer>
+
+    <!-- Sidebar de cuenta -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="loginSidebar">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold">{{ if .usuario }}MI CUENTA{{ else }}INICIAR SESIÓN{{ end }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column gap-3 pt-4">
+            {{ if .usuario }}
+            <div class="text-center mb-2">
+                <i class="bi-person-circle" style="font-size:3.5rem;color:#333;"></i>
+                <h5 class="fw-bold mt-2 mb-1">{{ .usuario.Nombre }}</h5>
+                <p class="text-muted small mb-2">{{ .usuario.Email }}</p>
+                {{ if eq .usuario.Rol "admin" }}<span class="badge bg-danger">Administrador</span>
+                {{ else }}<span class="badge bg-secondary">Cliente</span>{{ end }}
+            </div>
+            <hr>
+            {{ if eq .usuario.Rol "admin" }}
+            <a href="/admin" class="btn btn-dark w-100 py-2 fw-bold"><i class="bi-speedometer2 me-2"></i>PANEL ADMIN</a>
+            {{ end }}
+            {{ if eq .usuario.Rol "cliente" }}
+            <a href="/mis-pedidos" class="btn btn-outline-dark w-100 py-2 fw-bold"><i class="bi-bag me-2"></i>MIS PEDIDOS</a>
+            {{ end }}
+            <a href="/auth/logout" class="btn btn-outline-danger w-100 py-2 fw-bold"><i class="bi-box-arrow-right me-2"></i>CERRAR SESIÓN</a>
+            {{ else }}
+            <div id="panelLogin">
+                <form method="POST" action="/auth/login" class="d-flex flex-column gap-3">
+                    <input type="email" name="email" class="form-control" placeholder="E-MAIL" required>
+                    <div class="input-group">
+                        <input type="password" id="passLogin" name="password" class="form-control" placeholder="CONTRASEÑA" required>
+                        <button class="btn btn-outline-secondary" type="button" data-toggle-pass="passLogin"><i class="bi-eye" id="eye_passLogin"></i></button>
+                    </div>
+                    <button class="btn btn-dark w-100 py-2 fw-bold" type="submit">INICIAR SESIÓN</button>
+                </form>
+                <hr>
+                <p class="text-center mb-0">¿No tienes cuenta? <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="registro">REGÍSTRATE</a></p>
+            </div>
+            <div id="panelRegistro" style="display:none">
+                <form method="POST" action="/auth/registro" class="d-flex flex-column gap-3">
+                    <input type="text" name="nombre" class="form-control" placeholder="NOMBRE COMPLETO" required>
+                    <input type="email" name="email" class="form-control" placeholder="E-MAIL" required>
+                    <div class="input-group">
+                        <input type="password" id="passRegistro" name="password" class="form-control" placeholder="CONTRASEÑA" required>
+                        <button class="btn btn-outline-secondary" type="button" data-toggle-pass="passRegistro"><i class="bi-eye" id="eye_passRegistro"></i></button>
+                    </div>
+                    <button class="btn btn-dark w-100 py-2 fw-bold" type="submit">CREAR CUENTA</button>
+                </form>
+                <hr>
+                <p class="text-center mb-0">¿Ya tienes cuenta? <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="login">INICIA SESIÓN</a></p>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/scripts.js"></script>
+</body>
+</html>

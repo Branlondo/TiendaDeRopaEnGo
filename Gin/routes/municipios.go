@@ -2,6 +2,23 @@
 // Se usa para poblar dinámicamente el select de ciudad en el checkout.
 package routes
 
+// GetMunicipios devuelve los municipios de un departamento dado.
+// Retorna nil si el departamento no existe en el mapa.
+// Función exportada para permitir pruebas unitarias sin acceso a HTTP.
+func GetMunicipios(departamento string) []string {
+	return municipiosColombia[departamento]
+}
+
+// GetDepartamentos devuelve todos los departamentos disponibles en el mapa.
+// Exportado para validar cobertura en pruebas unitarias.
+func GetDepartamentos() []string {
+	deps := make([]string, 0, len(municipiosColombia))
+	for d := range municipiosColombia {
+		deps = append(deps, d)
+	}
+	return deps
+}
+
 // municipiosColombia mapea cada departamento al slice de sus municipios
 // principales, ordenados alfabéticamente. El key debe coincidir exactamente
 // con el string usado en departamentosColombia (routes.go).

@@ -6,14 +6,89 @@
         <meta name="description" content="" />
         <meta name="author" content="" />
         <title>Ropa Flash Fashion - RFF</title>
-        <!-- Favicon-->
         <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
-        <!-- Bootstrap icons-->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
-        <!-- Core theme CSS (includes Bootstrap)-->
         <link href="/static/css/styles.css" rel="stylesheet" />
+        <style>
+            .nav-mega { position:relative; }
+            .mega-menu {
+                display:none; position:absolute; top:100%; left:0;
+                background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+                box-shadow:0 8px 24px rgba(0,0,0,.1); min-width:200px;
+                z-index:1000; padding:8px 0;
+            }
+            .nav-mega:hover .mega-menu,
+            .nav-mega:focus-within .mega-menu { display:block; }
+            .mega-menu a { display:block; padding:8px 20px; font-size:13px;
+                           color:#1e293b; text-decoration:none; font-weight:500; }
+            .mega-menu a:hover { background:#f8fafc; }
+            .mega-menu .divider { border-top:1px solid #e2e8f0; margin:4px 0; }
+        </style>
     </head>
     <body>
+
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container px-4 px-lg-5">
+                <a class="btn btn-light d-flex align-items-center" href="/">
+                    <img src="/static/assets/Unilogo.ico" alt="Logo" style="height:24px;width:auto;margin-right:8px;">
+                    RFF
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarMain">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                        <li class="nav-item nav-mega">
+                            <a class="nav-link" href="/mujer">
+                                MUJER <i class="bi-chevron-down" style="font-size:10px;"></i>
+                            </a>
+                            <div class="mega-menu">
+                                <a href="/mujer"><strong>Ver todo</strong></a>
+                                <div class="divider"></div>
+                                {{ range .navSubcatsM }}{{ if gt .Total 0 }}
+                                <a href="/mujer/{{ .ID }}">{{ .Nombre }}</a>
+                                {{ end }}{{ end }}
+                            </div>
+                        </li>
+                        <li class="nav-item nav-mega">
+                            <a class="nav-link" href="/hombre">
+                                HOMBRE <i class="bi-chevron-down" style="font-size:10px;"></i>
+                            </a>
+                            <div class="mega-menu">
+                                <a href="/hombre"><strong>Ver todo</strong></a>
+                                <div class="divider"></div>
+                                {{ range .navSubcatsH }}{{ if gt .Total 0 }}
+                                <a href="/hombre/{{ .ID }}">{{ .Nombre }}</a>
+                                {{ end }}{{ end }}
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="d-flex gap-2">
+                        {{ if .usuario }}
+                        <button class="btn btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#loginSidebar">
+                            <i class="bi-person-fill me-1"></i>{{ .usuario.Nombre }}
+                        </button>
+                        {{ else }}
+                        <button class="btn btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#loginSidebar">
+                            <i class="bi-person me-1"></i>Iniciar sesión
+                        </button>
+                        {{ end }}
+                        <button class="btn btn-outline-dark" type="button" onclick="window.location.href='/carrito'">
+                            <i class="bi-cart-fill me-1"></i>Cart
+                            <span class="badge bg-dark text-white ms-1 rounded-pill">{{ .cartCount }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        {{ if .flashMsg }}
+        <div class="alert alert-{{ .flashTipo }} alert-dismissible fade show m-0" role="alert" style="border-radius:0;">
+            {{ .flashMsg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {{ end }}
 
         <!-- Header-->
         <header class="bg-dark py-5">
@@ -59,11 +134,63 @@
         </style>
         <!-- Footer-->
         <footer class="py-5 bg-dark">
-            <div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2026</p></div>
+            <div class="container"><p class="m-0 text-center text-white">Copyright &copy; RFF 2026</p></div>
         </footer>
-        <!-- Bootstrap core JS-->
+
+        <!-- Sidebar de cuenta -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="loginSidebar">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="offcanvas-title fw-bold">{{ if .usuario }}MI CUENTA{{ else }}INICIAR SESIÓN{{ end }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body d-flex flex-column gap-3 pt-4">
+                {{ if .usuario }}
+                <div class="text-center mb-2">
+                    <i class="bi-person-circle" style="font-size:3.5rem;color:#333;"></i>
+                    <h5 class="fw-bold mt-2 mb-1">{{ .usuario.Nombre }}</h5>
+                    <p class="text-muted small mb-2">{{ .usuario.Email }}</p>
+                    {{ if eq .usuario.Rol "admin" }}<span class="badge bg-danger">Administrador</span>
+                    {{ else }}<span class="badge bg-secondary">Cliente</span>{{ end }}
+                </div>
+                <hr>
+                {{ if eq .usuario.Rol "admin" }}
+                <a href="/admin" class="btn btn-dark w-100 py-2 fw-bold"><i class="bi-speedometer2 me-2"></i>PANEL ADMIN</a>
+                {{ end }}
+                {{ if eq .usuario.Rol "cliente" }}
+                <a href="/mis-pedidos" class="btn btn-outline-dark w-100 py-2 fw-bold"><i class="bi-bag me-2"></i>MIS PEDIDOS</a>
+                {{ end }}
+                <a href="/auth/logout" class="btn btn-outline-danger w-100 py-2 fw-bold"><i class="bi-box-arrow-right me-2"></i>CERRAR SESIÓN</a>
+                {{ else }}
+                <div id="panelLogin">
+                    <form method="POST" action="/auth/login" class="d-flex flex-column gap-3">
+                        <input type="email" name="email" class="form-control" placeholder="E-MAIL" required>
+                        <div class="input-group">
+                            <input type="password" id="passLogin" name="password" class="form-control" placeholder="CONTRASEÑA" required>
+                            <button class="btn btn-outline-secondary" type="button" data-toggle-pass="passLogin"><i class="bi-eye" id="eye_passLogin"></i></button>
+                        </div>
+                        <button class="btn btn-dark w-100 py-2 fw-bold" type="submit">INICIAR SESIÓN</button>
+                    </form>
+                    <hr>
+                    <p class="text-center mb-0">¿No tienes cuenta? <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="registro">REGÍSTRATE</a></p>
+                </div>
+                <div id="panelRegistro" style="display:none">
+                    <form method="POST" action="/auth/registro" class="d-flex flex-column gap-3">
+                        <input type="text" name="nombre" class="form-control" placeholder="NOMBRE COMPLETO" required>
+                        <input type="email" name="email" class="form-control" placeholder="E-MAIL" required>
+                        <div class="input-group">
+                            <input type="password" id="passRegistro" name="password" class="form-control" placeholder="CONTRASEÑA" required>
+                            <button class="btn btn-outline-secondary" type="button" data-toggle-pass="passRegistro"><i class="bi-eye" id="eye_passRegistro"></i></button>
+                        </div>
+                        <button class="btn btn-dark w-100 py-2 fw-bold" type="submit">CREAR CUENTA</button>
+                    </form>
+                    <hr>
+                    <p class="text-center mb-0">¿Ya tienes cuenta? <a href="javascript:void(0)" class="fw-bold text-dark" data-panel="login">INICIA SESIÓN</a></p>
+                </div>
+                {{ end }}
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Core theme JS-->
         <script src="/static/js/scripts.js"></script>
     </body>
 </html>

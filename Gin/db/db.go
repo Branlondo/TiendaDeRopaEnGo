@@ -41,6 +41,7 @@ func Init() {
 
 	crearTablas()
 	migrarPedidos()
+	migrarSubcategorias()
 	seedCategorias()
 	seedProductos()
 
@@ -93,6 +94,33 @@ func migrarPedidos() {
 			log.Printf("db: migración pedidos (ignorado): %v", err)
 		}
 	}
+}
+
+// migrarSubcategorias popula la tabla subcategorias a partir del campo de texto
+// libre Subcategoria de productos, y vincula cada producto a su fila con FK.
+// Es idempotente: ON CONFLICT DO NOTHING evita duplicados al reiniciar.
+func migrarSubcategorias() {
+	// 1) Añadir columna SubcategoriaID si aún no existe
+	DB.Exec(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS SubcategoriaID INTEGER REFERENCES subcategorias(ID_Subcategoria)`)
+
+	// 2) Insertar subcategorías únicas que ya existen como texto
+	DB.Exec(`
+		INSERT INTO subcategorias (CategoriaID, Nombre)
+		SELECT DISTINCT CategoriaID, Subcategoria
+		FROM productos
+		WHERE Subcategoria IS NOT NULL AND Subcategoria != ''
+		ON CONFLICT (CategoriaID, Nombre) DO NOTHING
+	`)
+
+	// 3) Vincular productos a su subcategoría por nombre
+	DB.Exec(`
+		UPDATE productos p
+		SET SubcategoriaID = s.ID_Subcategoria
+		FROM subcategorias s
+		WHERE p.CategoriaID = s.CategoriaID
+		  AND p.Subcategoria = s.Nombre
+		  AND p.SubcategoriaID IS NULL
+	`)
 }
 
 // crearTablas crea todas las tablas del esquema si no existen todavía.
@@ -197,6 +225,16 @@ func crearTablas() {
 			RelacionadoID INTEGER  NOT NULL REFERENCES productos(ID_Producto) ON DELETE CASCADE,
 			PRIMARY KEY (ProductoID, RelacionadoID)
 		);`,
+
+		// ── Subcategorias ─────────────────────────────────────────────────────
+		// Entidad propia: existe aunque no tenga productos asociados.
+		// UNIQUE(CategoriaID, Nombre) evita duplicados por categoría.
+		`CREATE TABLE IF NOT EXISTS subcategorias (
+			ID_Subcategoria SERIAL       PRIMARY KEY,
+			CategoriaID     INTEGER      NOT NULL REFERENCES categorias(ID_Categoria) ON DELETE CASCADE,
+			Nombre          VARCHAR(100) NOT NULL,
+			UNIQUE(CategoriaID, Nombre)
+		);`,
 	}
 
 	for _, stmt := range sentencias {
@@ -255,6 +293,93 @@ func ContarTabla(tabla string) int {
 	var n int
 	DB.QueryRow("SELECT COUNT(*) FROM " + tabla).Scan(&n)
 	return n
+}
+
+// ── Subcategorías ────────────────────────────────────────────────────────────
+
+// ListarSubcategoriasPorCategoria devuelve las subcategorías de una categoría
+// con la imagen del producto más reciente como portada y el total de productos.
+// Las subcategorías sin productos también se devuelven (Total=0); el template
+// decide si mostrarlas o no.
+func ListarSubcategoriasPorCategoria(categoriaID int) []struct {
+	ID          int
+	CategoriaID int
+	Nombre      string
+	Portada     string
+	Total       int
+} {
+	rows, err := DB.Query(`
+		SELECT s.ID_Subcategoria, s.CategoriaID, s.Nombre,
+		       COALESCE((
+		           SELECT ImagenURL FROM productos
+		           WHERE SubcategoriaID = s.ID_Subcategoria
+		             AND ImagenURL IS NOT NULL AND ImagenURL != ''
+		           ORDER BY ID_Producto DESC LIMIT 1
+		       ), '') AS Portada,
+		       (SELECT COUNT(*) FROM productos WHERE SubcategoriaID = s.ID_Subcategoria) AS Total
+		FROM subcategorias s
+		WHERE s.CategoriaID = $1
+		ORDER BY s.Nombre`, categoriaID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var result []struct {
+		ID          int
+		CategoriaID int
+		Nombre      string
+		Portada     string
+		Total       int
+	}
+	for rows.Next() {
+		var s struct {
+			ID          int
+			CategoriaID int
+			Nombre      string
+			Portada     string
+			Total       int
+		}
+		rows.Scan(&s.ID, &s.CategoriaID, &s.Nombre, &s.Portada, &s.Total)
+		result = append(result, s)
+	}
+	return result
+}
+
+// ObtenerNombreSubcategoria devuelve el Nombre de una subcategoría por su ID.
+// Devuelve "" si no existe (subcategoriaID = 0 o no encontrado).
+func ObtenerNombreSubcategoria(id int) string {
+	if id <= 0 {
+		return ""
+	}
+	var nombre string
+	DB.QueryRow(`SELECT Nombre FROM subcategorias WHERE ID_Subcategoria = $1`, id).Scan(&nombre)
+	return nombre
+}
+
+// CrearSubcategoria inserta una nueva subcategoría y devuelve su ID.
+func CrearSubcategoria(nombre string, categoriaID int) (int, error) {
+	var id int
+	err := DB.QueryRow(
+		`INSERT INTO subcategorias (CategoriaID, Nombre) VALUES ($1, $2)
+		 ON CONFLICT (CategoriaID, Nombre) DO UPDATE SET Nombre=EXCLUDED.Nombre
+		 RETURNING ID_Subcategoria`,
+		categoriaID, nombre,
+	).Scan(&id)
+	return id, err
+}
+
+// ActualizarSubcategoria cambia el nombre de una subcategoría.
+func ActualizarSubcategoria(id int, nombre string) error {
+	_, err := DB.Exec(`UPDATE subcategorias SET Nombre=$1 WHERE ID_Subcategoria=$2`, nombre, id)
+	return err
+}
+
+// EliminarSubcategoria borra una subcategoría. Los productos quedan con
+// SubcategoriaID = NULL (no se eliminan en cascada).
+func EliminarSubcategoria(id int) error {
+	DB.Exec(`UPDATE productos SET SubcategoriaID=NULL WHERE SubcategoriaID=$1`, id)
+	_, err := DB.Exec(`DELETE FROM subcategorias WHERE ID_Subcategoria=$1`, id)
+	return err
 }
 
 // ListarCategorias devuelve todas las categorías de la tienda desde la DB.

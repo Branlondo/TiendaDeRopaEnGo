@@ -94,10 +94,16 @@
                         <!-- Subcategoría -->
                         <div class="mb-0">
                             <label class="form-label fw-bold">Subcategoría</label>
-                            <input type="text" name="subcategoria" class="form-control"
-                                   placeholder="Ej: Camisa, Pantalón, Vestido..."
-                                   value="{{ .producto.Subcategoria }}">
-                            <div class="form-text">Aparece como filtro en la tienda.</div>
+                            <select name="subcategoriaID" id="selectSubcat" class="form-select">
+                                <option value="">— Sin subcategoría —</option>
+                                {{ range .subcatsActuales }}
+                                <option value="{{ .ID }}"
+                                    {{ if eq $.producto.SubcategoriaID .ID }}selected{{ end }}>
+                                    {{ .Nombre }}
+                                </option>
+                                {{ end }}
+                            </select>
+                            <div class="form-text">Se actualiza automáticamente al cambiar la sección.</div>
                         </div>
 
                     </div>
@@ -370,6 +376,40 @@ document.getElementById("listaImagenes").addEventListener("click", function (e) 
 document.getElementById("btnAgregarImg").addEventListener("click", function () {
     document.getElementById("listaImagenes").appendChild(filaImagen(""));
 });
+
+// ── Subcategorías dinámicas al cambiar categoría ─────────────────────────────
+(function() {
+    var selectCat   = document.querySelector('select[name="categoriaID"]');
+    var selectSubcat = document.getElementById("selectSubcat");
+    var subcatActual = "{{ .producto.SubcategoriaID }}";
+
+    function cargarSubcats(catID, seleccionado) {
+        selectSubcat.innerHTML = '<option value="">— Sin subcategoría —</option>';
+        if (!catID) return;
+        fetch('/api/subcategorias/' + catID)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                (data.subcategorias || []).forEach(function(s) {
+                    var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.nombre;
+                    if (String(s.id) === String(seleccionado)) opt.selected = true;
+                    selectSubcat.appendChild(opt);
+                });
+            })
+            .catch(function() {});
+    }
+
+    // Al cambiar categoría, recargar sin selección previa
+    selectCat.addEventListener('change', function() {
+        cargarSubcats(this.value, '');
+    });
+
+    // Al cargar la página, poblar con la categoría actual (mantiene el valor seleccionado)
+    if (selectCat.value && subcatActual !== "0") {
+        cargarSubcats(selectCat.value, subcatActual);
+    }
+})();
 </script>
 </body>
 </html>

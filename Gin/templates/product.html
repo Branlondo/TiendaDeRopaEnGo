@@ -7,6 +7,21 @@
         <link rel="icon" type="image/x-icon" href="/static/assets/Unilogo.ico" />
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
         <link href="/static/css/styles.css" rel="stylesheet" />
+        <style>
+            .nav-mega { position:relative; }
+            .mega-menu {
+                display:none; position:absolute; top:100%; left:0;
+                background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+                box-shadow:0 8px 24px rgba(0,0,0,.1); min-width:200px;
+                z-index:1000; padding:8px 0;
+            }
+            .nav-mega:hover .mega-menu,
+            .nav-mega:focus-within .mega-menu { display:block; }
+            .mega-menu a { display:block; padding:8px 20px; font-size:13px;
+                           color:#1e293b; text-decoration:none; font-weight:500; }
+            .mega-menu a:hover { background:#f8fafc; }
+            .mega-menu .divider { border-top:1px solid #e2e8f0; margin:4px 0; }
+        </style>
     </head>
     <body>
         <!-- Navigation-->
@@ -21,8 +36,30 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarMain">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-                        <li class="nav-item"><a class="nav-link" href="/mujer">MUJER</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/hombre">HOMBRE</a></li>
+                        <li class="nav-item nav-mega">
+                            <a class="nav-link" href="/mujer">
+                                MUJER <i class="bi-chevron-down" style="font-size:10px;"></i>
+                            </a>
+                            <div class="mega-menu">
+                                <a href="/mujer"><strong>Ver todo</strong></a>
+                                <div class="divider"></div>
+                                {{ range .navSubcatsM }}{{ if gt .Total 0 }}
+                                <a href="/mujer/{{ .ID }}">{{ .Nombre }}</a>
+                                {{ end }}{{ end }}
+                            </div>
+                        </li>
+                        <li class="nav-item nav-mega">
+                            <a class="nav-link" href="/hombre">
+                                HOMBRE <i class="bi-chevron-down" style="font-size:10px;"></i>
+                            </a>
+                            <div class="mega-menu">
+                                <a href="/hombre"><strong>Ver todo</strong></a>
+                                <div class="divider"></div>
+                                {{ range .navSubcatsH }}{{ if gt .Total 0 }}
+                                <a href="/hombre/{{ .ID }}">{{ .Nombre }}</a>
+                                {{ end }}{{ end }}
+                            </div>
+                        </li>
                     </ul>
                     <div class="d-flex gap-2">
                         {{ if .usuario }}

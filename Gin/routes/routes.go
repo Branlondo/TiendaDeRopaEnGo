@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"Gin/auth"
 	carritoPkg "Gin/carrito"
 	"Gin/db"
+	"Gin/helpers"
 	"Gin/models"
 	productoPkg "Gin/producto"
 
@@ -38,14 +38,16 @@ var departamentosColombia = []string{
 // Los métodos de pago se manejan directamente en checkout_pago.html (UI estática).
 
 // datosBase construye el mapa que TODOS los templates necesitan:
-// cartCount, usuario autenticado y flash messages.
+// cartCount, usuario autenticado, flash messages y subcategorías para el navbar.
 func datosBase(c *gin.Context) gin.H {
 	flashTipo, flashMsg := auth.GetFlash(c)
 	return gin.H{
-		"cartCount": contarItemsCarrito(c),
-		"usuario":   auth.UsuarioActual(c),
-		"flashTipo": flashTipo,
-		"flashMsg":  flashMsg,
+		"cartCount":    contarItemsCarrito(c),
+		"usuario":      auth.UsuarioActual(c),
+		"flashTipo":    flashTipo,
+		"flashMsg":     flashMsg,
+		"navSubcatsH":  db.ListarSubcategoriasPorCategoria(1), // Hombre — para el mega-menú
+		"navSubcatsM":  db.ListarSubcategoriasPorCategoria(2), // Mujer  — para el mega-menú
 	}
 }
 
@@ -57,66 +59,21 @@ func contarItemsCarrito(c *gin.Context) int {
 func SetupRoutes(r *gin.Engine) {
 
 	r.SetFuncMap(template.FuncMap{
-		// Aritmética para los botones +/- del carrito (enteros)
-		"add": func(a, b int) int { return a + b },
-		"sub": func(a, b int) int {
-			if a-b < 1 {
-				return 1
-			}
-			return a - b
-		},
-		// fsub resta dos float64 (usado en totales de pedido)
-		"fsub": func(a, b float64) float64 { return a - b },
-		// join une un slice de strings con un separador (ej: join .Tallas ", ")
-		"join": func(slice []string, sep string) string {
-			return strings.Join(slice, sep)
-		},
-		// contiene comprueba si un item está en un slice de strings (checkboxes de tallas)
-		"contiene": func(slice []string, item string) bool {
-			for _, s := range slice {
-				if s == item {
-					return true
-				}
-			}
-			return false
-		},
-		// contieneInt comprueba si un entero está en un slice de ints (checkboxes de relacionados)
-		"contieneInt": func(slice []int, item int) bool {
-			for _, v := range slice {
-				if v == item {
-					return true
-				}
-			}
-			return false
-		},
-		// strSlice crea un slice de strings desde argumentos variádicos.
-		// Se usa en el formulario de admin: {{ range $t := strSlice "XS" "S" "M" ... }}
-		"strSlice": func(items ...string) []string { return items },
-		// toLower / toUpper — para construir URLs y etiquetas a partir del nombre de categoría
-		"toLower": strings.ToLower,
-		"toUpper": func(s string) string {
-			if s == "" {
-				return s
-			}
-			r := []rune(s)
-			r[0] = unicode.ToUpper(r[0])
-			return strings.ToUpper(string(r))
-		},
-		"formatFecha": func(t time.Time) string {
-			return t.Format("02/01/2006 15:04")
-		},
-		"formatCOP": func(v float64) string {
-			n := int64(v)
-			s := strconv.FormatInt(n, 10)
-			result := ""
-			for i, c := range s {
-				if i > 0 && (len(s)-i)%3 == 0 {
-					result += "."
-				}
-				result += string(c)
-			}
-			return "$" + result
-		},
+		// Aritmética
+		"add":  helpers.Add,
+		"sub":  helpers.Sub,
+		"fsub": helpers.FSub,
+		// Strings
+		"join":     helpers.Join,
+		"toLower":  helpers.ToLower,
+		"toUpper":  helpers.ToUpper,
+		// Búsqueda en slices
+		"contiene":    helpers.Contiene,
+		"contieneInt": helpers.ContieneInt,
+		"strSlice":    helpers.StrSlice,
+		// Formateo
+		"formatFecha": helpers.FormatFecha,
+		"formatCOP":   helpers.FormatCOP,
 	})
 
 	r.Static("/static", "./static")
@@ -128,33 +85,60 @@ func SetupRoutes(r *gin.Engine) {
 		c.HTML(http.StatusOK, "index.html", datosBase(c))
 	})
 
-	// handlerCategoria es la función reutilizable para cualquier categoría de la tienda.
-	// Recibe el ID de la categoría en la DB y el subtítulo del header.
-	// Para agregar una nueva categoría en el futuro solo hace falta añadir una línea abajo
-	// y crear el registro correspondiente en la tabla `categorias`.
-	handlerCategoria := func(categoriaID int, subtitulo string) gin.HandlerFunc {
+	// handlerSubcats muestra el grid de tarjetas de subcategorías de una categoría.
+	// /mujer y /hombre llevan aquí; solo muestran subcats con productos.
+	handlerSubcats := func(categoriaID int, nombreCat string) gin.HandlerFunc {
 		return func(c *gin.Context) {
-			// Buscar el nombre de la categoría desde la DB para no hardcodearlo aquí
-			cats := db.ListarCategorias()
-			var nombreActual string
-			for _, cat := range cats {
-				if cat.ID == categoriaID {
-					nombreActual = cat.Nombre
-					break
-				}
-			}
+			subcats := db.ListarSubcategoriasPorCategoria(categoriaID)
 			data := datosBase(c)
-			data["productos"] = productoPkg.ListarPorCategoria(categoriaID)
-			data["subcategorias"] = productoPkg.SubcategoriasUnicas(categoriaID)
-			data["categorias"] = cats
-			data["categoriaActual"] = nombreActual
-			data["subtitulo"] = subtitulo
-			c.HTML(http.StatusOK, "categoria.html", data)
+			data["subcategorias"] = subcats
+			data["categoriaActual"] = nombreCat
+			data["categoriaID"] = categoriaID
+			c.HTML(http.StatusOK, "subcategorias.html", data)
 		}
 	}
 
-	r.GET("/hombre", handlerCategoria(1, "Ropa exclusivamente para hombres"))
-	r.GET("/mujer", handlerCategoria(2, "Ropa exclusivamente para mujeres"))
+	r.GET("/hombre", handlerSubcats(1, "Hombre"))
+	r.GET("/mujer", handlerSubcats(2, "Mujer"))
+
+	// /mujer/:id y /hombre/:id → catálogo de productos de una subcategoría
+	handlerCatalogo := func(categoriaID int, nombreCat string) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			subcatID, err := strconv.Atoi(c.Param("id"))
+			if err != nil {
+				c.Redirect(http.StatusSeeOther, "/"+strings.ToLower(nombreCat))
+				return
+			}
+			// Verificar que la subcategoría pertenece a esta categoría
+			subcats := db.ListarSubcategoriasPorCategoria(categoriaID)
+			var subcatNombre string
+			for _, s := range subcats {
+				if s.ID == subcatID {
+					subcatNombre = s.Nombre
+					break
+				}
+			}
+			if subcatNombre == "" {
+				c.Redirect(http.StatusSeeOther, "/"+strings.ToLower(nombreCat))
+				return
+			}
+			talla := c.Query("talla") // filtro opcional por talla (?talla=M)
+			productos := productoPkg.ListarPorSubcategoriaID(subcatID, talla)
+			tallas := productoPkg.TallasDeSubcategoria(subcatID)
+			data := datosBase(c)
+			data["productos"] = productos
+			data["tallas"] = tallas
+			data["tallaActual"] = talla
+			data["subcatNombre"] = subcatNombre
+			data["subcatID"] = subcatID
+			data["categoriaActual"] = nombreCat
+			data["categoriaID"] = categoriaID
+			c.HTML(http.StatusOK, "catalogo.html", data)
+		}
+	}
+
+	r.GET("/hombre/:id", handlerCatalogo(1, "Hombre"))
+	r.GET("/mujer/:id", handlerCatalogo(2, "Mujer"))
 
 	r.GET("/producto/:id", func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -286,6 +270,8 @@ func SetupRoutes(r *gin.Engine) {
 		data["todosProductos"] = productoPkg.Listar()
 		data["relacionadosIDs"] = []int{}
 		data["imagenesGaleria"] = []string{}
+		// subcatsActuales: subcategorías de la categoría por defecto (Hombre = 1)
+		data["subcatsActuales"] = db.ListarSubcategoriasPorCategoria(1)
 		c.HTML(http.StatusOK, "admin_producto_form.html", data)
 	})
 
@@ -295,7 +281,9 @@ func SetupRoutes(r *gin.Engine) {
 		descripcion := c.PostForm("descripcion")
 		precio, _ := strconv.ParseFloat(c.PostForm("precio"), 64)
 		categoriaID, _ := strconv.Atoi(c.PostForm("categoriaID"))
-		subcategoria := c.PostForm("subcategoria")
+		subcategoriaID, _ := strconv.Atoi(c.PostForm("subcategoriaID"))
+		// Obtener el nombre de texto de la subcategoría desde la DB
+		subcategoria := db.ObtenerNombreSubcategoria(subcategoriaID)
 		tallas := c.PostFormArray("tallas")
 
 		// Imágenes: primera imagen (portada) + adicionales
@@ -307,7 +295,7 @@ func SetupRoutes(r *gin.Engine) {
 			}
 		}
 
-		productoID, err := productoPkg.Crear(nombre, descripcion, precio, portadaURL, categoriaID, subcategoria, tallas)
+		productoID, err := productoPkg.Crear(nombre, descripcion, precio, portadaURL, categoriaID, subcategoria, subcategoriaID, tallas)
 		if err != nil {
 			auth.SetFlash(c, "danger", "Error al crear producto: "+err.Error())
 		} else {
@@ -339,6 +327,8 @@ func SetupRoutes(r *gin.Engine) {
 		data["categorias"] = db.ListarCategorias()
 		data["todosProductos"] = productoPkg.Listar()
 		data["relacionadosIDs"] = productoPkg.ObtenerRelacionadosIDs(id)
+		// subcatsActuales: subcategorías de la categoría actual del producto
+		data["subcatsActuales"] = db.ListarSubcategoriasPorCategoria(p.CategoriaID)
 		// Si no hay imágenes en la galería, usar la portada existente
 		imgs := productoPkg.ObtenerImagenes(id)
 		if len(imgs) == 0 && p.Imagen != "" {
@@ -355,7 +345,8 @@ func SetupRoutes(r *gin.Engine) {
 		descripcion := c.PostForm("descripcion")
 		precio, _ := strconv.ParseFloat(c.PostForm("precio"), 64)
 		categoriaID, _ := strconv.Atoi(c.PostForm("categoriaID"))
-		subcategoria := c.PostForm("subcategoria")
+		subcategoriaID, _ := strconv.Atoi(c.PostForm("subcategoriaID"))
+		subcategoria := db.ObtenerNombreSubcategoria(subcategoriaID)
 		tallas := c.PostFormArray("tallas")
 
 		imagenes := c.PostFormArray("imagenes")
@@ -366,7 +357,7 @@ func SetupRoutes(r *gin.Engine) {
 			}
 		}
 
-		if err := productoPkg.Actualizar(id, nombre, descripcion, precio, portadaURL, categoriaID, subcategoria, tallas); err != nil {
+		if err := productoPkg.Actualizar(id, nombre, descripcion, precio, portadaURL, categoriaID, subcategoria, subcategoriaID, tallas); err != nil {
 			auth.SetFlash(c, "danger", "Error al actualizar: "+err.Error())
 		} else {
 			productoPkg.GuardarImagenes(id, imagenes, portadaURL)
@@ -722,6 +713,73 @@ func SetupRoutes(r *gin.Engine) {
 		data["paginaActual"] = "pedidos"
 		data["pedidos"] = pedidos
 		c.HTML(http.StatusOK, "admin_pedidos.html", data)
+	})
+
+	// ── API pública: subcategorías por categoría (para el formulario de producto) ──
+	r.GET("/api/subcategorias/:categoriaID", func(c *gin.Context) {
+		catID, _ := strconv.Atoi(c.Param("categoriaID"))
+		subcats := db.ListarSubcategoriasPorCategoria(catID)
+		type Item struct {
+			ID     int    `json:"id"`
+			Nombre string `json:"nombre"`
+		}
+		var items []Item
+		for _, s := range subcats {
+			items = append(items, Item{ID: s.ID, Nombre: s.Nombre})
+		}
+		c.JSON(http.StatusOK, gin.H{"subcategorias": items})
+	})
+
+	// ── Admin: gestión de subcategorías ──────────────────────────────────────
+
+	admin.GET("/subcategorias", func(c *gin.Context) {
+		subcatsH := db.ListarSubcategoriasPorCategoria(1)
+		subcatsM := db.ListarSubcategoriasPorCategoria(2)
+		data := datosBase(c)
+		data["paginaActual"] = "subcategorias"
+		data["subcatsHombre"] = subcatsH
+		data["subcatsMujer"] = subcatsM
+		data["categorias"] = db.ListarCategorias()
+		c.HTML(http.StatusOK, "admin_subcategorias.html", data)
+	})
+
+	admin.POST("/subcategorias/crear", func(c *gin.Context) {
+		nombre := strings.TrimSpace(c.PostForm("nombre"))
+		categoriaID, _ := strconv.Atoi(c.PostForm("categoriaID"))
+		if nombre == "" {
+			auth.SetFlash(c, "danger", "El nombre no puede estar vacío.")
+		} else {
+			_, err := db.CrearSubcategoria(nombre, categoriaID)
+			if err != nil {
+				auth.SetFlash(c, "danger", "Error al crear subcategoría: "+err.Error())
+			} else {
+				auth.SetFlash(c, "success", "Subcategoría '"+nombre+"' creada.")
+			}
+		}
+		c.Redirect(http.StatusSeeOther, "/admin/subcategorias")
+	})
+
+	admin.POST("/subcategorias/:id/actualizar", func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+		nombre := strings.TrimSpace(c.PostForm("nombre"))
+		if nombre == "" {
+			auth.SetFlash(c, "danger", "El nombre no puede estar vacío.")
+		} else if err := db.ActualizarSubcategoria(id, nombre); err != nil {
+			auth.SetFlash(c, "danger", "Error al actualizar: "+err.Error())
+		} else {
+			auth.SetFlash(c, "success", "Subcategoría actualizada.")
+		}
+		c.Redirect(http.StatusSeeOther, "/admin/subcategorias")
+	})
+
+	admin.POST("/subcategorias/:id/eliminar", func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+		if err := db.EliminarSubcategoria(id); err != nil {
+			auth.SetFlash(c, "danger", "Error al eliminar: "+err.Error())
+		} else {
+			auth.SetFlash(c, "success", "Subcategoría eliminada. Los productos quedaron sin subcategoría asignada.")
+		}
+		c.Redirect(http.StatusSeeOther, "/admin/subcategorias")
 	})
 
 	// ── API pública: municipios por departamento ─────────────────────────────

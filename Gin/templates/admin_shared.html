@@ -35,6 +35,12 @@
            style="background:{{ if eq .paginaActual "pedidos" }}#3b82f6{{ else }}transparent{{ end }};">
             <i class="bi-bag-check"></i> Pedidos
         </a>
+
+        <a href="/admin/subcategorias"
+           class="d-flex align-items-center gap-2 py-2 px-3 rounded mb-1 text-decoration-none text-white {{ if eq .paginaActual "subcategorias" }}fw-bold{{ end }}"
+           style="background:{{ if eq .paginaActual "subcategorias" }}#3b82f6{{ else }}transparent{{ end }};">
+            <i class="bi-tags"></i> Subcategorías
+        </a>
     </div>
 
     <!-- Pie: usuario + acciones rápidas -->

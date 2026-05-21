@@ -16,6 +16,16 @@ type Categoria struct {
 	Descripcion string
 }
 
+// Subcategoria es una agrupación dentro de una Categoria (ej: Camiseta, Pantalón).
+// Existe de forma independiente: eliminar todos sus productos no la elimina.
+type Subcategoria struct {
+	ID          int
+	CategoriaID int
+	Nombre      string
+	Portada     string // URL de la imagen del producto más reciente de esta subcat
+	Total       int    // cantidad de productos activos (para ocultar vacías en tienda)
+}
+
 // Producto representa un artículo del catálogo de la tienda.
 // Los datos vienen de la tabla 'productos' de PostgreSQL.
 type Producto struct {
@@ -30,6 +40,7 @@ type Producto struct {
 	CategoriaID     int
 	NombreCategoria string // obtenido por JOIN con la tabla categorias
 	Subcategoria    string
+	SubcategoriaID  int    // FK a la tabla subcategorias (0 si no está asignada)
 }
 
 // ItemCarrito representa un producto dentro del carrito de compras (en sesión).

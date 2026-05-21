@@ -17,7 +17,7 @@ import (
 // sin necesidad de hardcodear IDs en los templates.
 const cols = `SELECT p.ID_Producto, p.Nombre, COALESCE(p.Descripcion,''), p.Precio,
 	COALESCE(p.ImagenURL,''), p.CategoriaID, COALESCE(p.Subcategoria,''), p.Tallas,
-	COALESCE(c.Nombre,'')
+	COALESCE(c.Nombre,''), COALESCE(p.SubcategoriaID, 0)
 	FROM productos p
 	LEFT JOIN categorias c ON p.CategoriaID = c.ID_Categoria`
 
@@ -45,7 +45,7 @@ func Listar() []models.Producto {
 	for rows.Next() {
 		var p models.Producto
 		var tallasStr string
-		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria); err != nil {
+		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria, &p.SubcategoriaID); err != nil {
 			continue
 		}
 		poblar(&p, tallasStr)
@@ -66,7 +66,7 @@ func ListarPorCategoria(categoriaID int) []models.Producto {
 	for rows.Next() {
 		var p models.Producto
 		var tallasStr string
-		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria); err != nil {
+		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria, &p.SubcategoriaID); err != nil {
 			continue
 		}
 		poblar(&p, tallasStr)
@@ -81,7 +81,7 @@ func BuscarPorID(id int) *models.Producto {
 	var p models.Producto
 	var tallasStr string
 	err := db.DB.QueryRow(cols+` WHERE p.ID_Producto = $1`, id).
-		Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria)
+		Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen, &p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria, &p.SubcategoriaID)
 	if err != nil {
 		return nil
 	}
@@ -147,7 +147,7 @@ func ObtenerRelacionados(productoID int) []models.Producto {
 		var p models.Producto
 		var tallasStr string
 		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen,
-			&p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria); err != nil {
+			&p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria, &p.SubcategoriaID); err != nil {
 			continue
 		}
 		poblar(&p, tallasStr)
@@ -189,6 +189,59 @@ func GuardarRelaciones(productoID int, relacionadosIDs []int) {
 	}
 }
 
+// ListarPorSubcategoriaID devuelve los productos de una subcategoría específica
+// filtrados opcionalmente por talla (talla="" → sin filtro).
+func ListarPorSubcategoriaID(subcategoriaID int, talla string) []models.Producto {
+	query := cols + ` WHERE p.SubcategoriaID = $1`
+	args := []interface{}{subcategoriaID}
+	if talla != "" {
+		// Busca la talla como valor exacto dentro del CSV (ej: "S,M,L")
+		query += ` AND (p.Tallas = $2 OR p.Tallas LIKE $3 OR p.Tallas LIKE $4 OR p.Tallas LIKE $5)`
+		args = append(args, talla, talla+",%", "%,"+talla, "%,"+talla+",%")
+	}
+	query += ` ORDER BY p.ID_Producto`
+	rows, err := db.DB.Query(query, args...)
+	if err != nil {
+		log.Println("producto.ListarPorSubcategoriaID:", err)
+		return nil
+	}
+	defer rows.Close()
+	var result []models.Producto
+	for rows.Next() {
+		var p models.Producto
+		var tallasStr string
+		if err := rows.Scan(&p.ID, &p.Nombre, &p.Descripcion, &p.Precio, &p.Imagen,
+			&p.CategoriaID, &p.Subcategoria, &tallasStr, &p.NombreCategoria, &p.SubcategoriaID); err != nil {
+			continue
+		}
+		poblar(&p, tallasStr)
+		result = append(result, p)
+	}
+	return result
+}
+
+// TallasDeSubcategoria devuelve las tallas únicas disponibles en una subcategoría.
+// Se usa para poblar el filtro de tallas en el catálogo.
+func TallasDeSubcategoria(subcategoriaID int) []string {
+	rows, err := db.DB.Query(
+		`SELECT DISTINCT unnest(string_to_array(Tallas, ',')) AS talla
+		 FROM productos WHERE SubcategoriaID = $1 AND Tallas != ''
+		 ORDER BY talla`, subcategoriaID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var result []string
+	for rows.Next() {
+		var t string
+		rows.Scan(&t)
+		if t != "" {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
 // SubcategoriasUnicas extrae las subcategorías únicas de una categoría.
 func SubcategoriasUnicas(categoriaID int) []string {
 	rows, err := db.DB.Query(
@@ -214,23 +267,33 @@ func SubcategoriasUnicas(categoriaID int) []string {
 
 // Crear inserta un nuevo producto y devuelve su ID generado.
 // tallas es un slice de strings como ["S","M","L"], se guarda como CSV.
-func Crear(nombre, descripcion string, precio float64, imagen string, categoriaID int, subcategoria string, tallas []string) (int, error) {
+// subcategoriaID=0 significa sin subcategoría asignada (se guarda NULL).
+func Crear(nombre, descripcion string, precio float64, imagen string, categoriaID int, subcategoria string, subcategoriaID int, tallas []string) (int, error) {
 	var id int
+	var subcatIDVal interface{}
+	if subcategoriaID > 0 {
+		subcatIDVal = subcategoriaID
+	}
 	err := db.DB.QueryRow(
-		`INSERT INTO productos (Nombre, Descripcion, Precio, ImagenURL, CategoriaID, Subcategoria, Tallas)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ID_Producto`,
-		nombre, descripcion, precio, imagen, categoriaID, subcategoria, strings.Join(tallas, ","),
+		`INSERT INTO productos (Nombre, Descripcion, Precio, ImagenURL, CategoriaID, Subcategoria, SubcategoriaID, Tallas)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ID_Producto`,
+		nombre, descripcion, precio, imagen, categoriaID, subcategoria, subcatIDVal, strings.Join(tallas, ","),
 	).Scan(&id)
 	return id, err
 }
 
 // Actualizar sobreescribe todos los campos de un producto existente.
-func Actualizar(id int, nombre, descripcion string, precio float64, imagen string, categoriaID int, subcategoria string, tallas []string) error {
+// subcategoriaID=0 limpia la FK (guarda NULL).
+func Actualizar(id int, nombre, descripcion string, precio float64, imagen string, categoriaID int, subcategoria string, subcategoriaID int, tallas []string) error {
+	var subcatIDVal interface{}
+	if subcategoriaID > 0 {
+		subcatIDVal = subcategoriaID
+	}
 	_, err := db.DB.Exec(
 		`UPDATE productos
-		 SET Nombre=$1, Descripcion=$2, Precio=$3, ImagenURL=$4, CategoriaID=$5, Subcategoria=$6, Tallas=$7
-		 WHERE ID_Producto=$8`,
-		nombre, descripcion, precio, imagen, categoriaID, subcategoria, strings.Join(tallas, ","), id,
+		 SET Nombre=$1, Descripcion=$2, Precio=$3, ImagenURL=$4, CategoriaID=$5, Subcategoria=$6, SubcategoriaID=$7, Tallas=$8
+		 WHERE ID_Producto=$9`,
+		nombre, descripcion, precio, imagen, categoriaID, subcategoria, subcatIDVal, strings.Join(tallas, ","), id,
 	)
 	return err
 }
